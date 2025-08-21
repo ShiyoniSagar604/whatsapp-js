@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Bot Trigger System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f3f3f3;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0px 0px 20px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: #25D366;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            background-color: #fafafa;
+        }
+
+        .section h3 {
+            color: #333;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-number {
+            background: #25D366;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        button {
+            background-color: #25D366;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+            margin: 10px 5px 10px 0;
+        }
+
+        button:hover {
+            background-color: #1ebe5b;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        input[type="url"], input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        input[type="url"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #25D366;
+            box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 500;
+            white-space: pre-line;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .groups-display {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+
+        .group-item {
+            padding: 8px 12px;
+            margin: 4px 0;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .group-item:hover {
+            background-color: #e8f5e8;
+            border-color: #25D366;
+        }
+
+        .group-item.selected {
+            background-color: #d4edda;
+            border-color: #25D366;
+            box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
+        }
+
+        .group-name {
+            font-weight: bold;
+            color: #333;
+            flex: 1;
+        }
+
+        .group-id {
+            font-family: monospace;
+            font-size: 12px;
+            color: #666;
+            margin-left: 10px;
+        }
+
+        .instructions {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .instructions h4 {
+            margin-top: 0;
+            color: #856404;
+        }
+
+        .instructions ol {
+            color: #856404;
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .form-group {
+            margin: 15px 0;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .copy-btn {
+            background-color: #6c757d;
+            font-size: 12px;
+            padding: 6px 12px;
+        }
+
+        .copy-btn:hover {
+            background-color: #5a6268;
+        }
+
+        .filter-input {
+            margin-bottom: 10px;
+        }
+
+        .selection-info {
+            background-color: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 14px;
+            color: #1976d2;
+        }
+
+        .clear-btn {
+            background-color: #dc3545;
+            font-size: 12px;
+            padding: 6px 12px;
+            margin-left: 10px;
+        }
+
+        .clear-btn:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 WhatsApp Bot Trigger System</h1>
+            <p class="subtitle">Business Solution - Send messages to selected WhatsApp groups from Google Sheets</p>
+        </div>
+
+        <!-- Step 1: Select Groups -->
+        <div class="section">
+            <h3><span class="step-number">1</span>Select Your WhatsApp Groups</h3>
+            <p>Choose which groups to send messages to this week:</p>
+            
+            <div class="form-group">
+                <input type="text" id="filterInput" class="filter-input" placeholder="🔍 Filter groups by name..." onkeyup="filterGroups()">
+            </div>
+            
+            <button id="loadGroupsBtn" onclick="loadAllGroups()">📋 Load All Groups</button>
+            <button id="selectAllBtn" onclick="selectAllGroups()" style="display: none;">✅ Select All</button>
+            <button id="clearSelectionBtn" class="clear-btn" onclick="clearSelection()" style="display: none;">❌ Clear Selection</button>
+            
+            <div id="groupsStatus"></div>
+            <div id="selectionInfo" class="selection-info" style="display: none;"></div>
+            <div id="groupsDisplay" class="groups-display" style="display: none;"></div>
+            
+            <button id="generateSheetBtn" onclick="generateSheetFormat()" style="display: none;">📄 Generate Google Sheet Format</button>
+            <div id="sheetOutput" class="groups-display" style="display: none;"></div>
+            <button id="copySheetBtn" class="copy-btn" style="display: none;" onclick="copyToClipboard('sheetOutput')">📋 Copy to Clipboard</button>
+        </div>
+
+        <!-- Step 2: Instructions -->
+        <div class="section">
+            <h3><span class="step-number">2</span>Create Your Google Sheet</h3>
+            <div class="instructions">
+                <h4>📝 Steps:</h4>
+                <ol>
+                    <li><strong>Select groups above</strong> and click "Generate Google Sheet Format"</li>
+                    <li><strong>Copy the generated format</strong> to a new Google Sheet</li>
+                    <li><strong>Edit cell A1</strong> with your weekly message</li>
+                    <li><strong>Make the sheet publicly viewable</strong> (Share → Anyone with link can view)</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Step 3: Send Messages -->
+        <div class="section">
+            <h3><span class="step-number">3</span>Send Messages</h3>
+            <form id="sheetForm">
+                <div class="form-group">
+                    <label for="sheetUrl">Google Sheet URL:</label>
+                    <input type="url" id="sheetUrl" name="sheetUrl" placeholder="Paste your Google Sheet link here" required>
+                </div>
+                <button type="submit">🚀 Send Messages to Selected Groups</button>
+            </form>
+            <div id="sendStatus"></div>
+        </div>
+    </div>
+
+    <script>
+        let allGroups = [];
+        let selectedGroups = [];
+
+        // Load all actual groups from the backend
+        async function loadAllGroups() {
+            const btn = document.getElementById('loadGroupsBtn');
+            const status = document.getElementById('groupsStatus');
+            const display = document.getElementById('groupsDisplay');
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Loading Groups...';
+            status.className = 'status info';
+            status.textContent = 'Loading your WhatsApp groups...';
+            
+            try {
+                // For now, use the saved groups data from your previous bot.js run
+                // In the future, this could connect to a live WhatsApp session
+                allGroups = [
+                    { name: "SWEET FAMILY 👭👫", id: "919937273113-1432715334@g.us" },
+                    { name: "Sweethearts", id: "120363039709783445@g.us" },
+                    { name: "Job For Fresher 😍 25", id: "120363042095015651@g.us" },
+                    { name: "Hexagon 24 & 25 batch hiring", id: "120363418291416354@g.us" },
+                    { name: "Job For Fresher 😍 38", id: "120363021622423802@g.us" },
+                    { name: "Test <> Yuvan", id: "120363402778314142@g.us" },
+                    { name: "MU Placement 2025", id: "120363332117028584@g.us" },
+                    { name: "Loving Eparis 👑", id: "919930612042-1393582111@g.us" },
+                    { name: "Amamma family💐", id: "919937273113-1393597464@g.us" },
+                    { name: "Flyy <> GS", id: "120363420175028557@g.us" },
+                    { name: "Sisinty raghunadham family.", id: "120363211159229444@g.us" },
+                    { name: "Computational Mathematics", id: "120363041991794161@g.us" },
+                    { name: "B.Tech 2025 B-MU@Career Supp Centre", id: "120363203655196580@g.us" },
+                    { name: "OFF-CAMPUS OPPORTUNITIES", id: "120363336318304834@g.us" },
+                    { name: "Our family", id: "919757329321-1357464588@g.us" },
+                    { name: "Coschool Backend engineer process- 25 batch", id: "120363423148290950@g.us" },
+                    { name: "Hehehe", id: "120363024192924586@g.us" },
+                    { name: "Trip?", id: "120363312108722653@g.us" },
+                    { name: "Sweeties", id: "919338666330-1590906354@g.us" },
+                    { name: "Wife is a machine!😶‍🌫🤫🥲🤭", id: "918886311786-1634824266@g.us" },
+                    { name: "🎓INTERNSHIP@IBM🎓", id: "120363134495946328@g.us" },
+                    { name: "Nilgiri Block MU 🇮🇳", id: "120363027434887763@g.us" },
+                    { name: "Lean Startup Classes (2022) @ MU", id: "120363179645747127@g.us" },
+                    { name: "Gifts for sweeya", id: "120363402833608707@g.us" },
+                    { name: "Synchron 2025B @ MU for Diversity hiring", id: "120363372478939027@g.us" },
+                    { name: "My family", id: "120363403247124645@g.us" },
+                    { name: "Manjeera Dance Returns 😁💃🏽", id: "120363312877448469@g.us" },
+                    { name: "CM 2025", id: "918688573583-1633101985@g.us" },
+                    { name: "MU 2025", id: "918125586878-1629191621@g.us" },
+                    { name: "very good people kadu", id: "919949936388-1627061722@g.us" },
+                    { name: "TCS NQT-MU2025", id: "120363363219286711@g.us" },
+                    { name: "MU.Wyreflow.25B", id: "120363419816722750@g.us" },
+                    { name: "Cringers", id: "120363021565442096@g.us" },
+                    { name: "Social Computing", id: "120363228274845383@g.us" },
+                    { name: "New Summer Interns 4 2025", id: "120363335341819775@g.us" },
+                    { name: "Neutrinos- 25 batch", id: "120363419456062627@g.us" },
+                    { name: "Enzen- 25 batch", id: "120363421192486819@g.us" },
+                    { name: "MU25B-ECE & CM Career Guidance & Mentoring", id: "120363233721162913@g.us" },
+                    { name: "STUDENT QUERIES", id: "120363330979824051@g.us" },
+                    { name: "Outskill- cricket", id: "120363408827019416@g.us" },
+                    { name: "MU.Pi Square.25B", id: "120363403516175350@g.us" },
+                    { name: "Fio labs-25 batch", id: "120363400418162321@g.us" },
+                    { name: "MU Alumni Hyderabad Chapter", id: "120363254302690615@g.us" }
+                ];
+
+                displayGroups(allGroups);
+                status.className = 'status success';
+                status.textContent = `✅ Loaded ${allGroups.length} groups. Click on groups to select them for this week's message.`;
+                
+                document.getElementById('selectAllBtn').style.display = 'inline-block';
+                document.getElementById('clearSelectionBtn').style.display = 'inline-block';
+                document.getElementById('generateSheetBtn').style.display = 'inline-block';
+                
+            } catch (error) {
+                status.className = 'status error';
+                status.textContent = 'Error loading groups: ' + error.message;
+            }
+            
+            btn.disabled = false;
+            btn.textContent = '📋 Load All Groups';
+        }
+
+        function displayGroups(groups) {
+            const display = document.getElementById('groupsDisplay');
+            display.innerHTML = '';
+            
+            groups.forEach(group => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'group-item';
+                groupDiv.onclick = () => toggleGroupSelection(group, groupDiv);
+                
+                groupDiv.innerHTML = `
+                    <span class="group-name">${group.name}</span>
+                    <span class="group-id">${group.id}</span>
+                `;
+                
+                display.appendChild(groupDiv);
+            });
+            
+            display.style.display = 'block';
+        }
+
+        function toggleGroupSelection(group, element) {
+            const index = selectedGroups.findIndex(g => g.id === group.id);
+            
+            if (index === -1) {
+                selectedGroups.push(group);
+                element.classList.add('selected');
+            } else {
+                selectedGroups.splice(index, 1);
+                element.classList.remove('selected');
+            }
+            
+            updateSelectionInfo();
+        }
+
+        function selectAllGroups() {
+            selectedGroups = [...allGroups];
+            document.querySelectorAll('.group-item').forEach(item => {
+                item.classList.add('selected');
+            });
+            updateSelectionInfo();
+        }
+
+        function clearSelection() {
+            selectedGroups = [];
+            document.querySelectorAll('.group-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            updateSelectionInfo();
+        }
+
+        function updateSelectionInfo() {
+            const info = document.getElementById('selectionInfo');
+            if (selectedGroups.length > 0) {
+                info.textContent = `📋 ${selectedGroups.length} groups selected for messaging`;
+                info.style.display = 'block';
+            } else {
+                info.style.display = 'none';
+            }
+        }
+
+        function filterGroups() {
+            const filter = document.getElementById('filterInput').value.toLowerCase();
+            const filteredGroups = allGroups.filter(group => 
+                group.name.toLowerCase().includes(filter)
+            );
+            displayGroups(filteredGroups);
+            
+            // Restore selection state
+            document.querySelectorAll('.group-item').forEach((item, index) => {
+                const group = filteredGroups[index];
+                if (selectedGroups.some(g => g.id === group.id)) {
+                    item.classList.add('selected');
+                }
+            });
+        }
+
+        function generateSheetFormat() {
+            if (selectedGroups.length === 0) {
+                alert('Please select at least one group first!');
+                return;
+            }
+            
+            const output = document.getElementById('sheetOutput');
+            const copyBtn = document.getElementById('copySheetBtn');
+            
+            let csvContent = 'Your weekly message goes here,\n';
+            selectedGroups.forEach(group => {
+                csvContent += `"${group.name}","${group.id}"\n`;
+            });
+            
+            output.textContent = csvContent;
+            output.style.display = 'block';
+            copyBtn.style.display = 'inline-block';
+            
+            // Scroll to the output
+            output.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Copy to clipboard function
+        async function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            try {
+                await navigator.clipboard.writeText(element.textContent);
+                
+                const copyBtn = document.getElementById('copySheetBtn');
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✅ Copied!';
+                copyBtn.style.backgroundColor = '#28a745';
+                
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.style.backgroundColor = '#6c757d';
+                }, 2000);
+            } catch (err) {
+                alert('Failed to copy to clipboard. Please select and copy manually.');
+            }
+        }
+
+        // Send messages function
+        document.getElementById("sheetForm").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            
+            const sheetUrl = document.getElementById("sheetUrl").value;
+            const status = document.getElementById("sendStatus");
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Processing...';
+            status.className = 'status info';
+            status.textContent = 'Reading Google Sheet and sending messages...';
+
+            try {
+                const response = await fetch("/send-messages", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ sheetUrl })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    status.className = 'status success';
+                    status.textContent = result.message;
+                } else {
+                    status.className = 'status error';
+                    status.textContent = result.message;
+                }
+            } catch (error) {
+                status.className = 'status error';
+                status.textContent = 'Error: Failed to connect to server. Please check your connection.';
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🚀 Send Messages to Selected Groups';
+        });
+
+        // Auto-load message on page load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const groupsStatus = document.getElementById('groupsStatus');
+                groupsStatus.className = 'status info';
+                groupsStatus.textContent = '💡 Click "Load All Groups" to see all your WhatsApp groups and select which ones to message this week.';
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
