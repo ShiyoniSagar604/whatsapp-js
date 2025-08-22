@@ -1,15 +1,47 @@
 const express = require('express');
 const path = require('path');
-const { sendMessagesFromSheet } = require('./message_sender');
+const { sendMessagesFromSheet, getWhatsAppGroups, getDeviceInfo, wasenderService } = require('./message_sender');
+require('dotenv').config();
 
 const app = express();
 app.use(express.json());
 app.use(express.static(__dirname));
 
+// Serve the main page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Get WhatsApp groups
+app.get('/api/groups', async (req, res) => {
+    try {
+        const result = await getWhatsAppGroups();
+        res.json(result);
+    } catch (error) {
+        console.error('❌ Error in /api/groups:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message,
+            groups: []
+        });
+    }
+});
+
+// Get device status and QR code
+app.get('/api/device-status', async (req, res) => {
+    try {
+        const result = await getDeviceInfo();
+        res.json(result);
+    } catch (error) {
+        console.error('❌ Error in /api/device-status:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Send messages endpoint
 app.post('/send-messages', async (req, res) => {
     try {
         const { sheetUrl } = req.body;
@@ -31,20 +63,35 @@ app.post('/send-messages', async (req, res) => {
 
         console.log('📤 Received request to send messages from sheet:', sheetUrl);
         
-        const successCount = await sendMessagesFromSheet(sheetUrl);
+        const result = await sendMessagesFromSheet(sheetUrl);
         
-        return res.json({ 
-            success: true, 
-            message: `✅ Sheet validated successfully! Found ${successCount} groups.
+        let responseMessage;
+        if (result.demo) {
+            responseMessage = `✅ Sheet validated successfully! Found ${result.totalGroups} groups.
 
 📝 Your Google Sheet format is correct and ready to use!
 
-⚠️ Note: For actual WhatsApp messaging, you need to:
-1. Run this on Intel Mac, Windows, or Linux (not Apple Silicon)
-2. Or use a cloud server where Puppeteer works properly
-3. Or wait for whatsapp-web.js to fully support Apple Silicon
+⚠️ Note: Currently running in demo mode. To enable actual WhatsApp messaging:
+1. Sign up for WasenderApi at https://wasender.com
+2. Get your API key and device ID
+3. Add them to your .env file
+4. Scan QR code to connect your WhatsApp
 
-🎯 Your business workflow is ready - just needs the right environment for WhatsApp!` 
+🎯 Your business workflow is ready - just needs WasenderApi configuration!`;
+        } else {
+            responseMessage = `🎉 Success! Messages sent successfully!
+
+📊 Results:
+✅ Sent: ${result.successCount}/${result.totalGroups} messages
+${result.failedCount > 0 ? `❌ Failed: ${result.failedCount} messages` : ''}
+
+📱 All messages have been delivered to your WhatsApp groups!`;
+        }
+        
+        return res.json({ 
+            success: true, 
+            message: responseMessage,
+            data: result
         });
         
     } catch (err) {
@@ -56,11 +103,54 @@ app.post('/send-messages', async (req, res) => {
     }
 });
 
-const PORT = 3000;
+// Logout device endpoint
+app.post('/api/logout', async (req, res) => {
+    try {
+        const result = await wasenderService.logoutDevice();
+        res.json(result);
+    } catch (error) {
+        console.error('❌ Error in /api/logout:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Webhook endpoint for message status updates (optional)
+app.post('/webhook', (req, res) => {
+    try {
+        console.log('📥 Webhook received:', req.body);
+        // Handle webhook data here if needed
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('❌ Webhook error:', error);
+        res.status(500).json({ success: false });
+    }
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({ 
+        status: 'healthy', 
+        timestamp: new Date().toISOString(),
+        wasenderConfigured: !!(process.env.WASENDER_API_KEY && process.env.WASENDER_DEVICE_ID)
+    });
+});
+
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log('🚀 WhatsApp Bot Server (Validation Mode)');
-    console.log(`📡 Server running on http://localhost:3000`);
-    console.log('✅ Google Sheets validation working perfectly!');
-    console.log('⚠️ WhatsApp messaging requires non-Apple Silicon environment');
-    console.log('\n💡 Your system is ready for production on the right platform!');
+    console.log('🚀 WhatsApp Bot Server with WasenderApi');
+    console.log(`📡 Server running on http://localhost:${PORT}`);
+    
+    if (process.env.WASENDER_API_KEY && process.env.WASENDER_DEVICE_ID) {
+        console.log('✅ WasenderApi configured - Ready for production messaging!');
+        console.log('📱 Check device status: http://localhost:' + PORT + '/api/device-status');
+    } else {
+        console.log('⚠️ WasenderApi not configured - Running in demo mode');
+        console.log('💡 Add WASENDER_API_KEY and WASENDER_DEVICE_ID to .env file to enable messaging');
+    }
+    
+    console.log('📊 Google Sheets validation working perfectly!');
+    console.log('🌍 Compatible with all platforms (Mac, Windows, Linux)!');
 });

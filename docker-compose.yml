@@ -2,7 +2,7 @@ services:
   whatsapp-bot:
     build:
       context: .
-      dockerfile: Dockerfile.simple
+      dockerfile: Dockerfile
     container_name: whatsapp-bot
     ports:
       - "3000:3000"

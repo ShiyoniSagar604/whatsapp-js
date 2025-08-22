@@ -1,9 +1,9 @@
-# Simple Dockerfile that copies local node_modules to avoid npm auth issues
+# Simple Dockerfile that properly installs dependencies
 FROM --platform=linux/amd64 node:18-slim
 
 WORKDIR /app
 
-# Install system dependencies for Puppeteer
+# Install system dependencies for Puppeteer (if needed later)
 RUN apt-get update && apt-get install -y \
     wget \
     gnupg \
@@ -24,10 +24,16 @@ RUN apt-get update && apt-get install -y \
     libxcb-dri3-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy everything including node_modules
+# Copy package files first (for better caching)
+COPY package*.json ./
+
+# Install Node.js dependencies
+RUN npm install
+
+# Copy application code
 COPY . .
 
-# Install Google Chrome
+# Install Google Chrome (if needed later)
 RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
     && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list \
     && apt-get update \
