@@ -79,8 +79,8 @@ class WasenderService {
 
             const response = await this.axiosInstance.get(`/api/groups`);
             
-            if (response.data && response.data.groups) {
-                const groups = response.data.groups.map(group => ({
+            if (response.data && response.data.data) {
+                const groups = response.data.data.map(group => ({
                     name: group.name || group.subject,
                     id: group.id,
                     participants: group.participants?.length || 0
