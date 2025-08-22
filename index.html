@@ -230,9 +230,7 @@
             background-color: #5a6268;
         }
 
-        .filter-input {
-            margin-bottom: 10px;
-        }
+
 
         .selection-info {
             background-color: #e3f2fd;
@@ -254,6 +252,115 @@
         .clear-btn:hover {
             background-color: #c82333;
         }
+
+        /* New styles for dropdown and tags */
+        .dropdown-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .dropdown-wrapper input {
+            width: 100%;
+            padding: 12px 40px 12px 12px; /* Adjust padding for arrow */
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            box-sizing: border-box;
+            cursor: pointer;
+            background-color: white;
+        }
+
+        .dropdown-wrapper input:focus {
+            outline: none;
+            border-color: #25D366;
+            box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
+        }
+
+        .dropdown-arrow {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            pointer-events: none; /* Allow clicks to pass through to input */
+            font-size: 12px;
+            transition: transform 0.2s ease;
+        }
+
+        .dropdown-wrapper.active .dropdown-arrow {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .dropdown-list {
+            position: absolute;
+            width: 100%;
+            max-height: 200px; /* Adjust as needed */
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            margin-top: 5px;
+        }
+
+        .dropdown-list .group-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dropdown-list .group-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-list .group-item:hover {
+            background-color: #f0f7f0;
+        }
+
+        .dropdown-list .group-item.selected {
+            background-color: #d4edda;
+            border-color: #25D366;
+            box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
+        }
+
+        .selected-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 6px;
+        }
+
+        .selected-tag {
+            background-color: #1976d2;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .selected-tag .remove-tag {
+            cursor: pointer;
+            font-size: 16px;
+            color: white;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .selected-tag .remove-tag:hover {
+            color: #ffebee;
+        }
     </style>
 </head>
 <body>
@@ -268,16 +375,28 @@
             <h3><span class="step-number">1</span>Select Your WhatsApp Groups</h3>
             <p>Choose which groups to send messages to this week:</p>
             
-            <div class="form-group">
-                <input type="text" id="filterInput" class="filter-input" placeholder="🔍 Filter groups by name..." onkeyup="filterGroups()">
-            </div>
-            
-            <button id="loadGroupsBtn" onclick="loadAllGroups()">📋 Load All Groups</button>
             <button id="selectAllBtn" onclick="selectAllGroups()" style="display: none;">✅ Select All</button>
             <button id="clearSelectionBtn" class="clear-btn" onclick="clearSelection()" style="display: none;">❌ Clear Selection</button>
             
             <div id="groupsStatus"></div>
             <div id="selectionInfo" class="selection-info" style="display: none;"></div>
+            
+            <!-- New Dropdown and Tags System -->
+            <div id="dropdownContainer" style="display: none;">
+                <div class="form-group">
+                    <label for="groupDropdown">Select WhatsApp Groups:</label>
+                    <div class="dropdown-wrapper">
+                        <input type="text" id="groupDropdown" placeholder="Type to search groups..." oninput="filterGroups()" onclick="toggleDropdown()">
+                        <span class="dropdown-arrow">▼</span>
+                    </div>
+                    <div id="dropdownList" class="dropdown-list" style="display: none;"></div>
+                </div>
+                
+                <!-- Selected Groups Tags -->
+                <div id="selectedTags" class="selected-tags" style="display: none;"></div>
+            </div>
+            
+            <!-- Old Groups Display (will be hidden) -->
             <div id="groupsDisplay" class="groups-display" style="display: none;"></div>
         </div>
 
@@ -314,14 +433,24 @@
         let allGroups = [];
         let selectedGroups = [];
 
+        // Auto-load groups on page load
+        window.addEventListener('load', async () => {
+            // Auto-load groups immediately
+            await loadAllGroups();
+            
+            // Show initial status
+            setTimeout(() => {
+                const groupsStatus = document.getElementById('groupsStatus');
+                groupsStatus.className = 'status info';
+                groupsStatus.textContent = '💡 Groups loaded automatically! Select which ones to message this week.';
+            }, 1000);
+        });
+
         // Load all actual groups from the backend
         async function loadAllGroups() {
-            const btn = document.getElementById('loadGroupsBtn');
             const status = document.getElementById('groupsStatus');
             const display = document.getElementById('groupsDisplay');
             
-            btn.disabled = true;
-            btn.textContent = '⏳ Loading Groups...';
             status.className = 'status info';
             status.textContent = 'Loading your WhatsApp groups...';
             
@@ -347,16 +476,20 @@
                 console.error('Error loading groups:', error);
                 status.className = 'status error';
                 status.textContent = `❌ Error loading groups: ${error.message}`;
-            } finally {
-                btn.disabled = false;
-                btn.textContent = '📋 Load All Groups';
             }
         }
 
         function displayGroups(groups) {
             const display = document.getElementById('groupsDisplay');
-            display.innerHTML = '';
+            const dropdownContainer = document.getElementById('dropdownContainer');
+            const dropdownList = document.getElementById('dropdownList');
             
+            // Hide old display, show new dropdown
+            display.style.display = 'none';
+            dropdownContainer.style.display = 'block';
+            
+            // Populate dropdown list
+            dropdownList.innerHTML = '';
             groups.forEach(group => {
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'group-item';
@@ -367,10 +500,11 @@
                     <span class="group-id">${group.id}</span>
                 `;
                 
-                display.appendChild(groupDiv);
+                dropdownList.appendChild(groupDiv);
             });
             
-            display.style.display = 'block';
+            // Update dropdown input text
+            updateDropdownText();
         }
 
         function toggleGroupSelection(group, element) {
@@ -385,23 +519,115 @@
             }
             
             updateSelectionInfo();
+            updateSelectedTags();
+            updateDropdownText();
+            
+            // Clear the search input after selection
+            document.getElementById('groupDropdown').value = '';
+            filterGroups(); // Reset the filtered list
         }
 
         function selectAllGroups() {
             selectedGroups = [...allGroups];
-            document.querySelectorAll('.group-item').forEach(item => {
+            document.querySelectorAll('#dropdownList .group-item').forEach(item => {
                 item.classList.add('selected');
             });
             updateSelectionInfo();
+            updateSelectedTags();
+            updateDropdownText();
         }
 
         function clearSelection() {
             selectedGroups = [];
-            document.querySelectorAll('.group-item').forEach(item => {
+            document.querySelectorAll('#dropdownList .group-item').forEach(item => {
                 item.classList.remove('selected');
             });
             updateSelectionInfo();
+            updateSelectedTags();
+            updateDropdownText();
         }
+
+        function updateDropdownText() {
+            const dropdownInput = document.getElementById('groupDropdown');
+            if (selectedGroups.length === 0) {
+                dropdownInput.placeholder = 'Type to search groups...';
+            } else if (selectedGroups.length === 1) {
+                dropdownInput.placeholder = selectedGroups[0].name;
+            } else {
+                dropdownInput.placeholder = `${selectedGroups.length} groups selected`;
+            }
+        }
+
+        function updateSelectedTags() {
+            const tagsContainer = document.getElementById('selectedTags');
+            
+            if (selectedGroups.length === 0) {
+                tagsContainer.style.display = 'none';
+                return;
+            }
+            
+            tagsContainer.innerHTML = '';
+            selectedGroups.forEach(group => {
+                const tag = document.createElement('div');
+                tag.className = 'selected-tag';
+                tag.innerHTML = `
+                    <span>${group.name}</span>
+                    <span class="remove-tag" onclick="removeGroupTag('${group.id}')">×</span>
+                `;
+                tagsContainer.appendChild(tag);
+            });
+            
+            tagsContainer.style.display = 'flex';
+        }
+
+        function removeGroupTag(groupId) {
+            const index = selectedGroups.findIndex(g => g.id === groupId);
+            if (index !== -1) {
+                selectedGroups.splice(index, 1);
+                
+                // Update dropdown list selection state
+                const dropdownItem = document.querySelector(`#dropdownList .group-item[onclick*="${groupId}"]`);
+                if (dropdownItem) {
+                    dropdownItem.classList.remove('selected');
+                }
+                
+                updateSelectionInfo();
+                updateSelectedTags();
+                updateDropdownText();
+            }
+        }
+
+        function toggleDropdown() {
+            const dropdownList = document.getElementById('dropdownList');
+            const dropdownWrapper = document.querySelector('.dropdown-wrapper');
+            const isVisible = dropdownList.style.display !== 'none';
+            
+            if (isVisible) {
+                dropdownList.style.display = 'none';
+                dropdownWrapper.classList.remove('active');
+            } else {
+                dropdownList.style.display = 'block';
+                dropdownWrapper.classList.add('active');
+                // Focus on the input when opening dropdown
+                document.getElementById('groupDropdown').focus();
+            }
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdownContainer = document.getElementById('dropdownContainer');
+            const dropdownList = document.getElementById('dropdownList');
+            const dropdownWrapper = document.querySelector('.dropdown-wrapper');
+            const dropdownInput = document.getElementById('groupDropdown');
+            
+            if (dropdownContainer && !dropdownContainer.contains(event.target)) {
+                dropdownList.style.display = 'none';
+                dropdownWrapper.classList.remove('active');
+                // Clear the input when closing dropdown
+                dropdownInput.value = '';
+                filterGroups(); // Reset to show all groups
+            }
+        });
 
         function updateSelectionInfo() {
             const info = document.getElementById('selectionInfo');
@@ -414,19 +640,57 @@
         }
 
         function filterGroups() {
-            const filter = document.getElementById('filterInput').value.toLowerCase();
-            const filteredGroups = allGroups.filter(group => 
-                group.name.toLowerCase().includes(filter)
-            );
-            displayGroups(filteredGroups);
+            const filter = document.getElementById('groupDropdown').value.toLowerCase();
+            const dropdownList = document.getElementById('dropdownList');
             
-            // Restore selection state
-            document.querySelectorAll('.group-item').forEach((item, index) => {
-                const group = filteredGroups[index];
-                if (selectedGroups.some(g => g.id === group.id)) {
-                    item.classList.add('selected');
-                }
-            });
+            // If dropdown is closed, don't filter
+            if (dropdownList.style.display === 'none') {
+                return;
+            }
+            
+            let filteredGroups;
+            if (filter === '') {
+                // Show all groups when input is empty
+                filteredGroups = allGroups;
+            } else {
+                // Filter groups based on input
+                filteredGroups = allGroups.filter(group => 
+                    group.name.toLowerCase().includes(filter)
+                );
+            }
+            
+            // Update dropdown list with filtered groups
+            dropdownList.innerHTML = '';
+            
+            if (filteredGroups.length === 0) {
+                // Show "no results" message
+                const noResultsDiv = document.createElement('div');
+                noResultsDiv.className = 'group-item';
+                noResultsDiv.style.textAlign = 'center';
+                noResultsDiv.style.color = '#666';
+                noResultsDiv.style.fontStyle = 'italic';
+                noResultsDiv.textContent = 'No groups found matching your search';
+                noResultsDiv.onclick = null; // No click action
+                dropdownList.appendChild(noResultsDiv);
+            } else {
+                filteredGroups.forEach(group => {
+                    const groupDiv = document.createElement('div');
+                    groupDiv.className = 'group-item';
+                    groupDiv.onclick = () => toggleGroupSelection(group, groupDiv);
+                    
+                    groupDiv.innerHTML = `
+                        <span class="group-name">${group.name}</span>
+                        <span class="group-id">${group.id}</span>
+                    `;
+                    
+                    // Restore selection state
+                    if (selectedGroups.some(g => g.id === group.id)) {
+                        groupDiv.classList.add('selected');
+                    }
+                    
+                    dropdownList.appendChild(groupDiv);
+                });
+            }
         }
 
         function updateCharCount() {
@@ -505,15 +769,6 @@
             
             submitBtn.disabled = false;
             submitBtn.textContent = '🚀 Send Messages to Selected Groups';
-        });
-
-        // Auto-load message on page load
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const groupsStatus = document.getElementById('groupsStatus');
-                groupsStatus.className = 'status info';
-                groupsStatus.textContent = '💡 Click "Load All Groups" to see all your WhatsApp groups and select which ones to message this week.';
-            }, 1000);
         });
     </script>
 </body>
