@@ -101,12 +101,28 @@
             box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
         }
 
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            box-sizing: border-box;
+            resize: vertical;
+            min-height: 100px;
+            font-family: Arial, sans-serif;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #25D366;
+        }
+
         .status {
             padding: 12px;
-            border-radius: 8px;
+            border-radius: 6px;
             margin: 10px 0;
-            font-weight: 500;
-            white-space: pre-line;
+            font-weight: bold;
         }
 
         .status.success {
@@ -244,7 +260,7 @@
     <div class="container">
         <div class="header">
             <h1>🤖 WhatsApp Bot Trigger System</h1>
-            <p class="subtitle">Business Solution - Send messages to selected WhatsApp groups from Google Sheets</p>
+            <p class="subtitle">Business Solution - Send messages directly to selected WhatsApp groups</p>
         </div>
 
         <!-- Step 1: Select Groups -->
@@ -263,34 +279,31 @@
             <div id="groupsStatus"></div>
             <div id="selectionInfo" class="selection-info" style="display: none;"></div>
             <div id="groupsDisplay" class="groups-display" style="display: none;"></div>
-            
-            <button id="generateSheetBtn" onclick="generateSheetFormat()" style="display: none;">📄 Generate Google Sheet Format</button>
-            <div id="sheetOutput" class="groups-display" style="display: none;"></div>
-            <button id="copySheetBtn" class="copy-btn" style="display: none;" onclick="copyToClipboard('sheetOutput')">📋 Copy to Clipboard</button>
         </div>
 
-        <!-- Step 2: Instructions -->
+        <!-- Step 2: Message Input -->
         <div class="section">
-            <h3><span class="step-number">2</span>Create Your Google Sheet</h3>
+            <h3><span class="step-number">2</span>Enter Your Message</h3>
             <div class="instructions">
                 <h4>📝 Steps:</h4>
                 <ol>
-                    <li><strong>Select groups above</strong> and click "Generate Google Sheet Format"</li>
-                    <li><strong>Copy the generated format</strong> to a new Google Sheet</li>
-                    <li><strong>Edit cell A1</strong> with your weekly message</li>
-                    <li><strong>Make the sheet publicly viewable</strong> (Share → Anyone with link can view)</li>
+                    <li><strong>Select groups above</strong> that you want to message</li>
+                    <li><strong>Type your message below</strong> in the message box</li>
+                    <li><strong>Click "Send Messages"</strong> to deliver to all selected groups</li>
                 </ol>
+            </div>
+            
+            <div class="form-group">
+                <label for="messageInput">Your Message:</label>
+                <textarea id="messageInput" name="messageInput" placeholder="Type your message here..." rows="4" required oninput="updateCharCount()"></textarea>
+                <div id="charCount" style="text-align: right; color: #666; font-size: 12px; margin-top: 5px;">0 / 4096 characters (WhatsApp limit)</div>
             </div>
         </div>
 
         <!-- Step 3: Send Messages -->
         <div class="section">
             <h3><span class="step-number">3</span>Send Messages</h3>
-            <form id="sheetForm">
-                <div class="form-group">
-                    <label for="sheetUrl">Google Sheet URL:</label>
-                    <input type="url" id="sheetUrl" name="sheetUrl" placeholder="Paste your Google Sheet link here" required>
-                </div>
+            <form id="messageForm">
                 <button type="submit">🚀 Send Messages to Selected Groups</button>
             </form>
             <div id="sendStatus"></div>
@@ -313,69 +326,31 @@
             status.textContent = 'Loading your WhatsApp groups...';
             
             try {
-                // For now, use the saved groups data from your previous bot.js run
-                // In the future, this could connect to a live WhatsApp session
-                allGroups = [
-                    { name: "SWEET FAMILY 👭👫", id: "919937273113-1432715334@g.us" },
-                    { name: "Sweethearts", id: "120363039709783445@g.us" },
-                    { name: "Job For Fresher 😍 25", id: "120363042095015651@g.us" },
-                    { name: "Hexagon 24 & 25 batch hiring", id: "120363418291416354@g.us" },
-                    { name: "Job For Fresher 😍 38", id: "120363021622423802@g.us" },
-                    { name: "Test <> Yuvan", id: "120363402778314142@g.us" },
-                    { name: "MU Placement 2025", id: "120363332117028584@g.us" },
-                    { name: "Loving Eparis 👑", id: "919930612042-1393582111@g.us" },
-                    { name: "Amamma family💐", id: "919937273113-1393597464@g.us" },
-                    { name: "Flyy <> GS", id: "120363420175028557@g.us" },
-                    { name: "Sisinty raghunadham family.", id: "120363211159229444@g.us" },
-                    { name: "Computational Mathematics", id: "120363041991794161@g.us" },
-                    { name: "B.Tech 2025 B-MU@Career Supp Centre", id: "120363203655196580@g.us" },
-                    { name: "OFF-CAMPUS OPPORTUNITIES", id: "120363336318304834@g.us" },
-                    { name: "Our family", id: "919757329321-1357464588@g.us" },
-                    { name: "Coschool Backend engineer process- 25 batch", id: "120363423148290950@g.us" },
-                    { name: "Hehehe", id: "120363024192924586@g.us" },
-                    { name: "Trip?", id: "120363312108722653@g.us" },
-                    { name: "Sweeties", id: "919338666330-1590906354@g.us" },
-                    { name: "Wife is a machine!😶‍🌫🤫🥲🤭", id: "918886311786-1634824266@g.us" },
-                    { name: "🎓INTERNSHIP@IBM🎓", id: "120363134495946328@g.us" },
-                    { name: "Nilgiri Block MU 🇮🇳", id: "120363027434887763@g.us" },
-                    { name: "Lean Startup Classes (2022) @ MU", id: "120363179645747127@g.us" },
-                    { name: "Gifts for sweeya", id: "120363402833608707@g.us" },
-                    { name: "Synchron 2025B @ MU for Diversity hiring", id: "120363372478939027@g.us" },
-                    { name: "My family", id: "120363403247124645@g.us" },
-                    { name: "Manjeera Dance Returns 😁💃🏽", id: "120363312877448469@g.us" },
-                    { name: "CM 2025", id: "918688573583-1633101985@g.us" },
-                    { name: "MU 2025", id: "918125586878-1629191621@g.us" },
-                    { name: "very good people kadu", id: "919949936388-1627061722@g.us" },
-                    { name: "TCS NQT-MU2025", id: "120363363219286711@g.us" },
-                    { name: "MU.Wyreflow.25B", id: "120363419816722750@g.us" },
-                    { name: "Cringers", id: "120363021565442096@g.us" },
-                    { name: "Social Computing", id: "120363228274845383@g.us" },
-                    { name: "New Summer Interns 4 2025", id: "120363335341819775@g.us" },
-                    { name: "Neutrinos- 25 batch", id: "120363419456062627@g.us" },
-                    { name: "Enzen- 25 batch", id: "120363421192486819@g.us" },
-                    { name: "MU25B-ECE & CM Career Guidance & Mentoring", id: "120363233721162913@g.us" },
-                    { name: "STUDENT QUERIES", id: "120363330979824051@g.us" },
-                    { name: "Outskill- cricket", id: "120363408827019416@g.us" },
-                    { name: "MU.Pi Square.25B", id: "120363403516175350@g.us" },
-                    { name: "Fio labs-25 batch", id: "120363400418162321@g.us" },
-                    { name: "MU Alumni Hyderabad Chapter", id: "120363254302690615@g.us" }
-                ];
-
-                displayGroups(allGroups);
-                status.className = 'status success';
-                status.textContent = `✅ Loaded ${allGroups.length} groups. Click on groups to select them for this week's message.`;
+                // Fetch real groups from the backend
+                const response = await fetch('/api/groups');
+                const result = await response.json();
                 
-                document.getElementById('selectAllBtn').style.display = 'inline-block';
-                document.getElementById('clearSelectionBtn').style.display = 'inline-block';
-                document.getElementById('generateSheetBtn').style.display = 'inline-block';
+                if (result.success && result.groups) {
+                    allGroups = result.groups;
+                    displayGroups(allGroups);
+                    
+                    status.className = 'status success';
+                    status.textContent = `✅ Loaded ${allGroups.length} groups. Click on groups to select them for this week's message.`;
+                    
+                    document.getElementById('selectAllBtn').style.display = 'inline-block';
+                    document.getElementById('clearSelectionBtn').style.display = 'inline-block';
+                } else {
+                    throw new Error(result.error || 'Failed to load groups');
+                }
                 
             } catch (error) {
+                console.error('Error loading groups:', error);
                 status.className = 'status error';
-                status.textContent = 'Error loading groups: ' + error.message;
+                status.textContent = `❌ Error loading groups: ${error.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📋 Load All Groups';
             }
-            
-            btn.disabled = false;
-            btn.textContent = '📋 Load All Groups';
         }
 
         function displayGroups(groups) {
@@ -454,66 +429,64 @@
             });
         }
 
-        function generateSheetFormat() {
-            if (selectedGroups.length === 0) {
-                alert('Please select at least one group first!');
-                return;
-            }
+        function updateCharCount() {
+            const messageInput = document.getElementById('messageInput');
+            const charCount = document.getElementById('charCount');
+            const count = messageInput.value.length;
+            charCount.textContent = `${count} / 4096 characters (WhatsApp limit)`;
             
-            const output = document.getElementById('sheetOutput');
-            const copyBtn = document.getElementById('copySheetBtn');
-            
-            let csvContent = 'Your weekly message goes here,\n';
-            selectedGroups.forEach(group => {
-                csvContent += `"${group.name}","${group.id}"\n`;
-            });
-            
-            output.textContent = csvContent;
-            output.style.display = 'block';
-            copyBtn.style.display = 'inline-block';
-            
-            // Scroll to the output
-            output.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // Copy to clipboard function
-        async function copyToClipboard(elementId) {
-            const element = document.getElementById(elementId);
-            try {
-                await navigator.clipboard.writeText(element.textContent);
-                
-                const copyBtn = document.getElementById('copySheetBtn');
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = '✅ Copied!';
-                copyBtn.style.backgroundColor = '#28a745';
-                
-                setTimeout(() => {
-                    copyBtn.textContent = originalText;
-                    copyBtn.style.backgroundColor = '#6c757d';
-                }, 2000);
-            } catch (err) {
-                alert('Failed to copy to clipboard. Please select and copy manually.');
+            // Change color based on length
+            if (count > 1000) {
+                charCount.style.color = '#dc3545'; // Red for long messages
+            } else if (count > 500) {
+                charCount.style.color = '#ffc107'; // Yellow for medium messages
+            } else {
+                charCount.style.color = '#666'; // Default gray
             }
         }
 
         // Send messages function
-        document.getElementById("sheetForm").addEventListener("submit", async function (e) {
+        document.getElementById("messageForm").addEventListener("submit", async function (e) {
             e.preventDefault();
             
-            const sheetUrl = document.getElementById("sheetUrl").value;
+            const message = document.getElementById("messageInput").value;
             const status = document.getElementById("sendStatus");
             const submitBtn = e.target.querySelector('button[type="submit"]');
+            
+            // Validate that groups are selected
+            if (selectedGroups.length === 0) {
+                status.className = 'status error';
+                status.textContent = '❌ Please select at least one WhatsApp group first!';
+                return;
+            }
+            
+            // Validate that message is provided
+            if (!message || message.trim() === '') {
+                status.className = 'status error';
+                status.textContent = '❌ Please enter a message to send!';
+                return;
+            }
+            
+            // Validate message length (WhatsApp limit is 4096 characters)
+            if (message.length > 4096) {
+                status.className = 'status error';
+                status.textContent = '❌ Message is too long! WhatsApp supports maximum 4096 characters.';
+                return;
+            }
             
             submitBtn.disabled = true;
             submitBtn.textContent = '⏳ Processing...';
             status.className = 'status info';
-            status.textContent = 'Reading Google Sheet and sending messages...';
+            status.textContent = `Sending message to ${selectedGroups.length} selected groups...`;
 
             try {
                 const response = await fetch("/send-messages", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ sheetUrl })
+                    body: JSON.stringify({ 
+                        message: message,
+                        selectedGroups: selectedGroups
+                    })
                 });
 
                 const result = await response.json();

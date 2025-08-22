@@ -7,6 +7,53 @@ const app = express();
 app.use(express.json());
 app.use(express.static(__dirname));
 
+// Function to send direct message to selected groups
+async function sendDirectMessage(message, selectedGroups) {
+    try {
+        // Check if WasenderApi is configured
+        if (!process.env.WASENDER_API_KEY || !process.env.WASENDER_DEVICE_ID) {
+            // Return demo response if not configured
+            return {
+                success: true,
+                demo: true,
+                totalGroups: 4,
+                successCount: 4,
+                failedCount: 0,
+                results: [
+                    { group: "Demo Group 1", success: true },
+                    { group: "Demo Group 2", success: true },
+                    { group: "Demo Group 3", success: true },
+                    { group: "Demo Group 4", success: true }
+                ]
+            };
+        }
+
+        // Use the selected groups from frontend instead of fetching all groups
+        if (!selectedGroups || selectedGroups.length === 0) {
+            throw new Error('No groups selected. Please select groups on the frontend first.');
+        }
+
+        console.log(`📋 Found ${selectedGroups.length} selected groups to send to`);
+        console.log(`📝 Message: ${message}`);
+
+        // Send messages using WasenderApi to only selected groups
+        const sendResults = await wasenderService.sendMessagesToGroups(selectedGroups, message);
+        
+        return {
+            success: true,
+            demo: false,
+            totalGroups: selectedGroups.length,
+            successCount: sendResults.successCount || 0,
+            failedCount: selectedGroups.length - (sendResults.successCount || 0),
+            results: sendResults.results || []
+        };
+        
+    } catch (error) {
+        console.error('❌ Error in sendDirectMessage:', error.message);
+        throw error;
+    }
+}
+
 // Serve the main page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
@@ -44,32 +91,32 @@ app.get('/api/device-status', async (req, res) => {
 // Send messages endpoint
 app.post('/send-messages', async (req, res) => {
     try {
-        const { sheetUrl } = req.body;
+        const { message, selectedGroups } = req.body;
         
-        if (!sheetUrl || !sheetUrl.includes('docs.google.com/spreadsheets')) {
+        if (!message || message.trim() === '') {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Please provide a valid Google Sheets URL' 
+                message: 'Please provide a message to send' 
             });
         }
 
-        const sheetIdMatch = sheetUrl.match(/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-        if (!sheetIdMatch) {
+        if (!selectedGroups || selectedGroups.length === 0) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Invalid Google Sheet URL format' 
+                message: 'Please select at least one group on the frontend' 
             });
         }
 
-        console.log('📤 Received request to send messages from sheet:', sheetUrl);
+        console.log('📤 Received request to send message:', message);
+        console.log('📋 Selected groups:', selectedGroups.length);
         
-        const result = await sendMessagesFromSheet(sheetUrl);
+        const result = await sendDirectMessage(message, selectedGroups);
         
         let responseMessage;
         if (result.demo) {
-            responseMessage = `✅ Sheet validated successfully! Found ${result.totalGroups} groups.
+            responseMessage = `✅ Message prepared successfully! Found ${result.totalGroups} groups.
 
-📝 Your Google Sheet format is correct and ready to use!
+📝 Your message is ready to send!
 
 ⚠️ Note: Currently running in demo mode. To enable actual WhatsApp messaging:
 1. Sign up for WasenderApi at https://wasender.com
