@@ -253,6 +253,17 @@
             background-color: #c82333;
         }
 
+        .logout-btn {
+            background-color: #dc3545;
+            font-size: 14px;
+            padding: 8px 16px;
+            margin-left: 20px;
+        }
+
+        .logout-btn:hover {
+            background-color: #c82333;
+        }
+
         /* New styles for dropdown and tags */
         .dropdown-wrapper {
             position: relative;
@@ -368,6 +379,7 @@
         <div class="header">
             <h1>🤖 WhatsApp Bot Trigger System</h1>
             <p class="subtitle">Business Solution - Send messages directly to selected WhatsApp groups</p>
+            <button id="logoutBtn" class="logout-btn" onclick="logoutUser()">🚪 Logout</button>
         </div>
 
         <!-- Step 1: Select Groups -->
@@ -435,6 +447,14 @@
 
         // Auto-load groups on page load
         window.addEventListener('load', async () => {
+            // Check if user is authenticated
+            const userSession = sessionStorage.getItem('currentUserSession');
+            if (!userSession) {
+                // Redirect to authentication page if not logged in
+                window.location.href = '/';
+                return;
+            }
+
             // Auto-load groups immediately
             await loadAllGroups();
             
@@ -455,8 +475,20 @@
             status.textContent = 'Loading your WhatsApp groups...';
             
             try {
-                // Fetch real groups from the backend
-                const response = await fetch('/api/groups');
+                // Get user session from storage
+                const userSession = JSON.parse(sessionStorage.getItem('currentUserSession'));
+                if (!userSession || !userSession.apiKey) {
+                    throw new Error('User session not found. Please login again.');
+                }
+
+                // Fetch real groups from the backend using user's session
+                const response = await fetch('/api/groups', {
+                    headers: {
+                        'Authorization': `Bearer ${userSession.apiKey}`,
+                        'Content-Type': 'application/json',
+                        'X-User-Phone': userSession.phoneNumber
+                    }
+                });
                 const result = await response.json();
                 
                 if (result.success && result.groups) {
@@ -476,6 +508,13 @@
                 console.error('Error loading groups:', error);
                 status.className = 'status error';
                 status.textContent = `❌ Error loading groups: ${error.message}`;
+                
+                // If session error, redirect to login
+                if (error.message.includes('session') || error.message.includes('login')) {
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 3000);
+                }
             }
         }
 
@@ -744,9 +783,18 @@
             status.textContent = `Sending message to ${selectedGroups.length} selected groups...`;
 
             try {
+                // Get user session from storage
+                const userSession = JSON.parse(sessionStorage.getItem('currentUserSession'));
+                if (!userSession || !userSession.apiKey) {
+                    throw new Error('User session not found. Please login again.');
+                }
+
                 const response = await fetch("/send-messages", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${userSession.apiKey}`
+                    },
                     body: JSON.stringify({ 
                         message: message,
                         selectedGroups: selectedGroups
@@ -770,6 +818,15 @@
             submitBtn.disabled = false;
             submitBtn.textContent = '🚀 Send Messages to Selected Groups';
         });
+
+        // Logout function
+        function logoutUser() {
+            // Clear session storage
+            sessionStorage.removeItem('currentUserSession');
+            
+            // Redirect to authentication page
+            window.location.href = '/';
+        }
     </script>
 </body>
 </html>

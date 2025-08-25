@@ -95,8 +95,54 @@ async function sendMessagesFromSheet(sheetUrl) {
 }
 
 // Function to get groups from WasenderApi
-async function getWhatsAppGroups() {
+async function getWhatsAppGroups(req) {
     try {
+        // Check if request has authorization header (multi-user mode)
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const userApiKey = authHeader.substring(7);
+            
+            // In fallback mode, we need to distinguish between users
+            // For now, let's check if this is the primary user
+            const primaryPhoneNumber = process.env.PRIMARY_PHONE_NUMBER || '+918523862893';
+            
+            // Extract phone number from session storage (this is a workaround)
+            // In a real multi-user system, this would come from the database
+            let userPhoneNumber = null;
+            
+            // Try to get user info from the request context
+            if (req.headers['x-user-phone']) {
+                userPhoneNumber = req.headers['x-user-phone'];
+            }
+            
+            if (userPhoneNumber === primaryPhoneNumber) {
+                // Primary user - get real groups
+                console.log('🔐 Primary user - Getting real WhatsApp groups');
+                const userWasenderService = new WasenderService(userApiKey);
+                const result = await userWasenderService.getWhatsAppGroups();
+                
+                return {
+                    success: result.success,
+                    demo: false,
+                    groups: result.groups || [],
+                    error: result.error
+                };
+            } else {
+                // New user - return demo groups or empty list
+                console.log('🆕 New user - Returning demo groups');
+                return {
+                    success: true,
+                    demo: true,
+                    groups: [
+                        { name: "Demo Group 1", id: "demo_1@g.us", participants: 5 },
+                        { name: "Demo Group 2", id: "demo_2@g.us", participants: 8 },
+                        { name: "Demo Group 3", id: "demo_3@g.us", participants: 12 }
+                    ]
+                };
+            }
+        }
+        
+        // Fallback to original method (single user mode)
         if (!process.env.WASENDER_API_KEY || !process.env.WASENDER_DEVICE_ID) {
             // Return demo groups if API not configured
             return {

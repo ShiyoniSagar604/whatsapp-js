@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Bot - Authentication</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f3f3f3;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 50px auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0px 0px 20px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: #25D366;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin: 20px 0;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        input[type="tel"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        input[type="tel"]:focus {
+            outline: none;
+            border-color: #25D366;
+            box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
+        }
+
+        button {
+            background-color: #25D366;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+            margin: 10px 5px 10px 0;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #1ebe5b;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .logout-btn {
+            background-color: #dc3545;
+        }
+
+        .logout-btn:hover {
+            background-color: #c82333;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .phone-format {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .existing-user-info {
+            background-color: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .existing-user-info h4 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 WhatsApp Bot Authentication</h1>
+            <p class="subtitle">Connect your WhatsApp account to start messaging</p>
+        </div>
+
+        <form id="authForm">
+            <div class="form-group">
+                <label for="phoneNumber">WhatsApp Phone Number:</label>
+                <input type="tel" id="phoneNumber" name="phoneNumber" 
+                       placeholder="+1234567890" required>
+                <div class="phone-format">Format: +[Country Code][Phone Number] (e.g., +919876543210)</div>
+            </div>
+
+            <div class="form-group">
+                <button type="submit" id="checkUserBtn">🔍 Check User Status</button>
+                <button type="button" id="logoutBtn" class="logout-btn" style="display: none;">🚪 Logout</button>
+            </div>
+        </form>
+
+        <div id="status"></div>
+        <div id="existingUserInfo" class="existing-user-info" style="display: none;"></div>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        // Format phone number input
+        document.getElementById('phoneNumber').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 0 && !value.startsWith('+')) {
+                value = '+' + value;
+            }
+            e.target.value = value;
+        });
+
+        // Check user status
+        document.getElementById('authForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const phoneNumber = document.getElementById('phoneNumber').value.trim();
+            const statusDiv = document.getElementById('status');
+            const checkBtn = document.getElementById('checkUserBtn');
+            
+            if (!phoneNumber) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ Please enter a phone number';
+                return;
+            }
+
+            // Validate phone number format
+            if (!/^\+\d{10,15}$/.test(phoneNumber)) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ Please enter a valid phone number with country code (e.g., +919876543210)';
+                return;
+            }
+
+            checkBtn.disabled = true;
+            checkBtn.textContent = '⏳ Checking...';
+            statusDiv.className = 'status info';
+            statusDiv.textContent = '🔍 Checking if you are an existing user...';
+
+            try {
+                const response = await fetch('/api/auth/check-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phoneNumber })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (result.exists) {
+                        // Existing user
+                        currentUser = result.session;
+                        statusDiv.className = 'status success';
+                        statusDiv.textContent = `✅ Welcome back! Your WhatsApp session is ${result.connected ? 'connected' : 'disconnected'}`;
+                        
+                        // Show existing user info
+                        showExistingUserInfo(result.session);
+                        
+                        // Show logout button
+                        document.getElementById('logoutBtn').style.display = 'inline-block';
+                        
+                        // Store session info in session storage BEFORE redirect
+                        sessionStorage.setItem('currentUserSession', JSON.stringify({
+                            id: result.session.id,
+                            phoneNumber: result.session.phone_number,
+                            apiKey: result.session.api_key,
+                            status: result.session.status
+                        }));
+                        
+                        // Redirect to WhatsApp bot page after 2 seconds
+                        setTimeout(() => {
+                            console.log('🔄 Redirecting to WhatsApp bot page...');
+                            window.location.href = '/whatsapp-bot';
+                        }, 2000);
+                        
+                    } else {
+                        // New user - redirect to QR code page
+                        statusDiv.className = 'status info';
+                        statusDiv.textContent = '🆕 New user detected! Redirecting to setup...';
+                        
+                        // Store phone number in session storage for QR page
+                        sessionStorage.setItem('newUserPhone', phoneNumber);
+                        
+                        setTimeout(() => {
+                            window.location.href = '/qr-login';
+                        }, 1500);
+                    }
+                } else {
+                    throw new Error(result.error || 'Failed to check user status');
+                }
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `❌ Error: ${error.message}`;
+            }
+            
+            checkBtn.disabled = false;
+            checkBtn.textContent = '🔍 Check User Status';
+        });
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', async function() {
+            if (!currentUser) return;
+            
+            const statusDiv = document.getElementById('status');
+            const logoutBtn = document.getElementById('logoutBtn');
+            
+            logoutBtn.disabled = true;
+            logoutBtn.textContent = '⏳ Logging out...';
+            
+            try {
+                const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId: currentUser.id })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    statusDiv.className = 'status success';
+                    statusDiv.textContent = '✅ Successfully logged out!';
+                    
+                    // Clear current user and hide logout button
+                    currentUser = null;
+                    logoutBtn.style.display = 'none';
+                    document.getElementById('existingUserInfo').style.display = 'none';
+                    
+                    // Clear phone number input
+                    document.getElementById('phoneNumber').value = '';
+                    
+                    setTimeout(() => {
+                        statusDiv.textContent = '';
+                    }, 3000);
+                    
+                } else {
+                    throw new Error(result.error || 'Failed to logout');
+                }
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `❌ Logout failed: ${error.message}`;
+            }
+            
+            logoutBtn.disabled = false;
+            logoutBtn.textContent = '🚪 Logout';
+        });
+
+        function showExistingUserInfo(session) {
+            const infoDiv = document.getElementById('existingUserInfo');
+            infoDiv.innerHTML = `
+                <h4>📱 Your WhatsApp Session</h4>
+                <p><strong>Phone:</strong> ${session.phone_number}</p>
+                <p><strong>Status:</strong> <span style="color: ${session.status === 'connected' ? '#28a745' : '#dc3545'}">${session.status}</span></p>
+                <p><strong>Created:</strong> ${new Date(session.created_at).toLocaleDateString()}</p>
+            `;
+            infoDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

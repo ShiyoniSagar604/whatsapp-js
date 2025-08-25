@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Bot - QR Code Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f3f3f3;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 30px auto;
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0px 0px 20px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: #25D366;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .phone-info {
+            background-color: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .phone-info h3 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+
+        .qr-container {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            background-color: #fafafa;
+        }
+
+        .qr-code {
+            max-width: 300px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .qr-code img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .qr-code canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .instructions {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .instructions h4 {
+            margin-top: 0;
+            color: #856404;
+        }
+
+        .instructions ol {
+            color: #856404;
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin: 8px 0;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .status.connecting {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .back-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+            margin-top: 20px;
+        }
+
+        .back-btn:hover {
+            background-color: #5a6268;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #25D366;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #6c757d;
+        }
+
+        .status-indicator.connected {
+            background-color: #28a745;
+        }
+
+        .status-indicator.connecting {
+            background-color: #ffc107;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 WhatsApp QR Code Login</h1>
+            <p class="subtitle">Scan the QR code with your WhatsApp to connect your account</p>
+        </div>
+
+        <div id="phoneInfo" class="phone-info">
+            <h3>📞 Setting up WhatsApp for:</h3>
+            <p id="phoneNumber" style="font-size: 18px; font-weight: bold; color: #1976d2;"></p>
+        </div>
+
+        <div id="qrContainer" class="qr-container">
+            <h3>🔐 Scan QR Code</h3>
+            <div id="qrCode" class="qr-code">
+                <div class="loading-spinner"></div>
+                <p>Generating QR code...</p>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h4>📋 How to connect:</h4>
+            <ol>
+                <li><strong>Open WhatsApp</strong> on your phone</li>
+                <li><strong>Go to Settings</strong> → WhatsApp Web/Desktop</li>
+                <li><strong>Point your camera</strong> at the QR code above</li>
+                <li><strong>Wait for connection</strong> - you'll be redirected automatically</li>
+            </ol>
+        </div>
+
+        <div id="connectionStatus" class="connection-status" style="display: none;">
+            <div id="statusIndicator" class="status-indicator"></div>
+            <span id="statusText">Checking connection...</span>
+        </div>
+
+        <div id="status"></div>
+
+        <div style="text-align: center;">
+            <a href="/" class="back-btn">← Back to Login</a>
+        </div>
+    </div>
+
+    <script>
+        let sessionId = null;
+        let connectionCheckInterval = null;
+        let qrCodeGenerated = false;
+
+        // Get phone number from session storage
+        window.addEventListener('load', function() {
+            const phoneNumber = sessionStorage.getItem('newUserPhone');
+            if (!phoneNumber) {
+                window.location.href = '/';
+                return;
+            }
+            
+            document.getElementById('phoneNumber').textContent = phoneNumber;
+            
+            // Start the setup process
+            createNewSession(phoneNumber);
+        });
+
+        // Create new WhatsApp session
+        async function createNewSession(phoneNumber) {
+            const statusDiv = document.getElementById('status');
+            const qrCodeDiv = document.getElementById('qrCode');
+            
+            try {
+                statusDiv.className = 'status info';
+                statusDiv.textContent = '🔄 Creating new WhatsApp session...';
+                
+                const response = await fetch('/api/auth/create-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phoneNumber })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    sessionId = result.session.id;
+                    statusDiv.className = 'status success';
+                    statusDiv.textContent = '✅ Session created successfully! Now generating QR code...';
+                    
+                    // Generate QR code
+                    await generateQRCode(sessionId);
+                    
+                } else {
+                    throw new Error(result.error || 'Failed to create session');
+                }
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `❌ Error creating session: ${error.message}`;
+                
+                // Show specific message for fallback mode
+                if (error.message.includes('fallback mode')) {
+                    qrCodeDiv.innerHTML = `
+                        <div style="text-align: center; padding: 20px;">
+                            <h3 style="color: #dc3545;">⚠️ Multi-User System Not Available</h3>
+                            <p style="color: #666; margin: 10px 0;">
+                                This system is currently running in fallback mode and cannot create new WhatsApp sessions.
+                            </p>
+                            <p style="color: #666; margin: 10px 0;">
+                                <strong>Contact your administrator</strong> to get Master API Key access for full multi-user functionality.
+                            </p>
+                            <p style="color: #666; margin: 10px 0;">
+                                <strong>Current Status:</strong> Only the primary user (+918523862893) can access the system.
+                            </p>
+                        </div>
+                    `;
+                } else {
+                    qrCodeDiv.innerHTML = '<p style="color: #dc3545;">Failed to create session</p>';
+                }
+            }
+        }
+
+        // Generate QR code for the session
+        async function generateQRCode(sessionId) {
+            const qrCodeDiv = document.getElementById('qrCode');
+            const statusDiv = document.getElementById('status');
+            
+            try {
+                statusDiv.className = 'status info';
+                statusDiv.textContent = '🔄 Generating QR code...';
+                
+                const response = await fetch(`/api/auth/qr-code/${sessionId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    qrCodeGenerated = true;
+                    
+                    // Display QR code
+                    qrCodeDiv.innerHTML = `
+                        <img src="data:image/png;base64,${result.qrImage}" alt="WhatsApp QR Code">
+                        <p style="margin-top: 15px; font-size: 12px; color: #666;">
+                            Scan this QR code with your WhatsApp
+                        </p>
+                    `;
+                    
+                    statusDiv.className = 'status success';
+                    statusDiv.textContent = '✅ QR code generated! Scan it with your WhatsApp to connect.';
+                    
+                    // Start checking connection status
+                    startConnectionCheck(sessionId);
+                    
+                } else {
+                    throw new Error(result.error || 'Failed to generate QR code');
+                }
+                
+            } catch (error) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = `❌ Error generating QR code: ${error.message}`;
+                qrCodeDiv.innerHTML = '<p style="color: #dc3545;">Failed to generate QR code</p>';
+            }
+        }
+
+        // Start checking connection status
+        function startConnectionCheck(sessionId) {
+            const connectionStatus = document.getElementById('connectionStatus');
+            const statusIndicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            
+            connectionStatus.style.display = 'flex';
+            statusIndicator.className = 'status-indicator connecting';
+            statusText.textContent = 'Waiting for QR scan...';
+            
+            // Check connection every 3 seconds
+            connectionCheckInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/auth/check-connection/${sessionId}`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        if (result.connected) {
+                            // Successfully connected!
+                            clearInterval(connectionCheckInterval);
+                            
+                            statusIndicator.className = 'status-indicator connected';
+                            statusText.textContent = '✅ Connected! Redirecting...';
+                            
+                            // Store session info in session storage
+                            sessionStorage.setItem('currentUserSession', JSON.stringify({
+                                id: sessionId,
+                                phoneNumber: sessionStorage.getItem('newUserPhone'),
+                                apiKey: result.apiKey
+                            }));
+                            
+                            // Clear new user phone from storage
+                            sessionStorage.removeItem('newUserPhone');
+                            
+                            // Redirect to WhatsApp bot page
+                            setTimeout(() => {
+                                window.location.href = '/whatsapp-bot';
+                            }, 2000);
+                            
+                        } else if (result.status === 'need_scan') {
+                            statusText.textContent = 'Waiting for QR scan...';
+                        } else if (result.status === 'connecting') {
+                            statusText.textContent = 'Connecting...';
+                        } else {
+                            statusText.textContent = `Status: ${result.status}`;
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.error('Error checking connection:', error);
+                }
+            }, 3000);
+        }
+
+        // Clean up interval when leaving page
+        window.addEventListener('beforeunload', function() {
+            if (connectionCheckInterval) {
+                clearInterval(connectionCheckInterval);
+            }
+        });
+    </script>
+</body>
+</html>
