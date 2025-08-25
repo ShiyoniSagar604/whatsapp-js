@@ -3,7 +3,7 @@ require('dotenv').config();
 
 class WasenderService {
     constructor(apiKey = null, deviceId = null) {
-        this.apiUrl = process.env.WASENDER_API_URL || 'https://api.wasender.com';
+        this.apiUrl = process.env.WASENDER_API_URL || 'https://wasenderapi.com';
         
         // Support both single-user and multi-user modes
         if (apiKey) {
@@ -33,6 +33,12 @@ class WasenderService {
 
     // Check if WasenderApi is configured
     isConfigured() {
+        // For multi-user mode (scheduler), we only need API key
+        // For single-user mode, we need both API key and device ID
+        if (this.apiKey && !this.deviceId) {
+            // Multi-user mode - only API key required
+            return true;
+        }
         return !!(this.apiKey && this.deviceId);
     }
 
@@ -47,8 +53,14 @@ class WasenderService {
                 };
             }
 
+            console.log(`🔍 Checking device status at: ${this.apiUrl}/api/status`);
+            console.log(`🔑 Using API Key: ${this.apiKey ? this.apiKey.substring(0, 10) + '...' : 'NOT SET'}`);
+            
             // Use the correct endpoint from WasenderApi
             const response = await this.axiosInstance.get(`/api/status`);
+            
+            console.log(`📡 Status API Response:`, response.data);
+            
             return {
                 success: true,
                 connected: response.data.status === 'connected',
@@ -56,6 +68,10 @@ class WasenderService {
             };
         } catch (error) {
             console.error('❌ Error checking device status:', error.message);
+            if (error.response) {
+                console.error('❌ Error response status:', error.response.status);
+                console.error('❌ Error response data:', error.response.data);
+            }
             return {
                 success: false,
                 connected: false,
