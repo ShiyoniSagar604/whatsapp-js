@@ -1,16 +1,45 @@
 const express = require('express');
 const path = require('path');
 const { sendMessagesFromSheet, getWhatsAppGroups, getDeviceInfo, wasenderService } = require('./message_sender');
+const AuthService = require('./auth_service');
+const WasenderService = require('./wasender_service');
 require('dotenv').config();
 
 const app = express();
 app.use(express.json());
-app.use(express.static(__dirname));
+
+// Initialize auth service
+const authService = new AuthService();
 
 // Function to send direct message to selected groups
-async function sendDirectMessage(message, selectedGroups) {
+async function sendDirectMessage(message, selectedGroups, userApiKey = null) {
     try {
-        // Check if WasenderApi is configured
+        // Check if we have a user API key (multi-user mode)
+        if (userApiKey) {
+            // Use user's API key to send messages
+            const userWasenderService = new WasenderService(userApiKey);
+            
+            if (!selectedGroups || selectedGroups.length === 0) {
+                throw new Error('No groups selected. Please select groups on the frontend first.');
+            }
+
+            console.log(`📋 Found ${selectedGroups.length} selected groups to send to`);
+            console.log(`📝 Message: ${message}`);
+
+            // Send messages using user's WasenderApi session
+            const sendResults = await userWasenderService.sendMessagesToGroups(selectedGroups, message);
+            
+            return {
+                success: true,
+                demo: false,
+                totalGroups: selectedGroups.length,
+                successCount: sendResults.successCount || 0,
+                failedCount: selectedGroups.length - (sendResults.successCount || 0),
+                results: sendResults.results || []
+            };
+        }
+
+        // Fallback to original method (single user mode)
         if (!process.env.WASENDER_API_KEY || !process.env.WASENDER_DEVICE_ID) {
             // Return demo response if not configured
             return {
@@ -52,17 +81,27 @@ async function sendDirectMessage(message, selectedGroups) {
         console.error('❌ Error in sendDirectMessage:', error.message);
         throw error;
     }
-}
+ }
 
-// Serve the main page
+// Serve the authentication page as main page
 app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'auth.html'));
+});
+
+// Serve the QR login page
+app.get('/qr-login', (req, res) => {
+    res.sendFile(path.join(__dirname, 'qr-login.html'));
+});
+
+// Serve the WhatsApp bot page (existing functionality)
+app.get('/whatsapp-bot', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Get WhatsApp groups
 app.get('/api/groups', async (req, res) => {
     try {
-        const result = await getWhatsAppGroups();
+        const result = await getWhatsAppGroups(req);
         res.json(result);
     } catch (error) {
         console.error('❌ Error in /api/groups:', error);
@@ -81,6 +120,142 @@ app.get('/api/device-status', async (req, res) => {
         res.json(result);
     } catch (error) {
         console.error('❌ Error in /api/device-status:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Check current sessions (Admin)
+app.get('/api/sessions', async (req, res) => {
+    try {
+        const result = await authService.getAllSessions();
+        res.json(result);
+    } catch (error) {
+        console.error('❌ Error in /api/sessions:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// ===== MULTI-USER AUTHENTICATION ENDPOINTS =====
+
+// Check if user exists
+app.post('/api/auth/check-user', async (req, res) => {
+    try {
+        const { phoneNumber } = req.body;
+        
+        if (!phoneNumber) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Phone number is required' 
+            });
+        }
+
+        const result = await authService.checkExistingUser(phoneNumber);
+        res.json(result);
+        
+    } catch (error) {
+        console.error('❌ Error in /api/auth/check-user:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Create new WhatsApp session
+app.post('/api/auth/create-session', async (req, res) => {
+    try {
+        const { phoneNumber } = req.body;
+        
+        if (!phoneNumber) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Phone number is required' 
+            });
+        }
+
+        const result = await authService.createNewSession(phoneNumber);
+        res.json(result);
+        
+    } catch (error) {
+        console.error('❌ Error in /api/auth/create-session:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Get QR code for session
+app.get('/api/auth/qr-code/:sessionId', async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        
+        if (!sessionId) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Session ID is required' 
+            });
+        }
+
+        const result = await authService.getQRCode(sessionId);
+        res.json(result);
+        
+    } catch (error) {
+        console.error('❌ Error in /api/auth/qr-code:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Check connection status for session
+app.get('/api/auth/check-connection/:sessionId', async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        
+        if (!sessionId) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Session ID is required' 
+            });
+        }
+
+        const result = await authService.checkConnectionStatus(sessionId);
+        res.json(result);
+        
+    } catch (error) {
+        console.error('❌ Error in /api/auth/check-connection:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Logout user session
+app.post('/api/auth/logout', async (req, res) => {
+    try {
+        const { sessionId } = req.body;
+        
+        if (!sessionId) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Session ID is required' 
+            });
+        }
+
+        const result = await authService.logoutSession(sessionId);
+        res.json(result);
+        
+    } catch (error) {
+        console.error('❌ Error in /api/auth/logout:', error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -110,7 +285,15 @@ app.post('/send-messages', async (req, res) => {
         console.log('📤 Received request to send message:', message);
         console.log('📋 Selected groups:', selectedGroups.length);
         
-        const result = await sendDirectMessage(message, selectedGroups);
+        // Check if request has authorization header (multi-user mode)
+        let userApiKey = null;
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            userApiKey = authHeader.substring(7);
+            console.log('🔐 Using user API key for message sending');
+        }
+        
+        const result = await sendDirectMessage(message, selectedGroups, userApiKey);
         
         let responseMessage;
         if (result.demo) {
@@ -184,6 +367,9 @@ app.get('/health', (req, res) => {
         wasenderConfigured: !!(process.env.WASENDER_API_KEY && process.env.WASENDER_DEVICE_ID)
     });
 });
+
+// Serve static files AFTER custom routes
+app.use(express.static(__dirname));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

@@ -2,12 +2,22 @@ const axios = require('axios');
 require('dotenv').config();
 
 class WasenderService {
-    constructor() {
+    constructor(apiKey = null, deviceId = null) {
         this.apiUrl = process.env.WASENDER_API_URL || 'https://api.wasender.com';
-        this.apiKey = process.env.WASENDER_API_KEY;
-        this.deviceId = process.env.WASENDER_DEVICE_ID;
         
-        if (!this.apiKey || !this.deviceId) {
+        // Support both single-user and multi-user modes
+        if (apiKey) {
+            // Multi-user mode: use provided API key
+            this.apiKey = apiKey;
+            this.deviceId = deviceId;
+            console.log('🔐 Using user-provided API key for WasenderService');
+        } else {
+            // Single-user mode: use environment variables
+            this.apiKey = process.env.WASENDER_API_KEY;
+            this.deviceId = process.env.WASENDER_DEVICE_ID;
+        }
+        
+        if (!this.apiKey) {
             console.warn('⚠️ WasenderApi credentials not configured. Running in demo mode.');
         }
         
@@ -57,8 +67,46 @@ class WasenderService {
     // Get WhatsApp groups
     async getWhatsAppGroups() {
         try {
+            // Always try to get real groups first, even in fallback mode
+            console.log('🔍 Attempting to fetch real WhatsApp groups...');
+            
+            try {
+                console.log(`🔍 Making API call to: ${this.apiUrl}/api/groups`);
+                console.log(`🔑 Using API Key: ${this.apiKey ? this.apiKey.substring(0, 10) + '...' : 'NOT SET'}`);
+                
+                const response = await this.axiosInstance.get(`/api/groups`);
+                
+                console.log(`📡 API Response Status: ${response.status}`);
+                console.log(`📡 API Response Data:`, JSON.stringify(response.data, null, 2));
+                
+                if (response.data && response.data.data) {
+                    const groups = response.data.data.map(group => ({
+                        name: group.name || group.subject,
+                        id: group.id,
+                        participants: group.participants?.length || 0
+                    }));
+                    
+                    console.log(`📋 Retrieved ${groups.length} WhatsApp groups from WasenderApi`);
+                    return {
+                        success: true,
+                        groups: groups
+                    };
+                } else {
+                    console.log('⚠️ API response missing data structure');
+                }
+            } catch (apiError) {
+                console.error('❌ API Error Details:', {
+                    message: apiError.message,
+                    status: apiError.response?.status,
+                    statusText: apiError.response?.statusText,
+                    data: apiError.response?.data
+                });
+                console.log('⚠️ Failed to fetch real groups, falling back to demo groups');
+            }
+            
+            // Only return demo groups if API call completely fails
             if (!this.isConfigured()) {
-                // Return demo groups when not configured
+                console.log('📱 Using demo groups as fallback');
                 return {
                     success: true,
                     groups: [
@@ -71,28 +119,8 @@ class WasenderService {
                     ]
                 };
             }
-
-            const statusCheck = await this.checkDeviceStatus();
-            if (!statusCheck.connected) {
-                throw new Error('WhatsApp device not connected. Please scan QR code first.');
-            }
-
-            const response = await this.axiosInstance.get(`/api/groups`);
             
-            if (response.data && response.data.data) {
-                const groups = response.data.data.map(group => ({
-                    name: group.name || group.subject,
-                    id: group.id,
-                    participants: group.participants?.length || 0
-                }));
-                
-                console.log(`📋 Retrieved ${groups.length} WhatsApp groups from WasenderApi`);
-                return {
-                    success: true,
-                    groups: groups
-                };
-            }
-            
+            // If we reach here, return empty groups (API failed but we're configured)
             return {
                 success: true,
                 groups: []
@@ -111,39 +139,51 @@ class WasenderService {
     // Send message to a group
     async sendMessageToGroup(groupId, message) {
         try {
-            if (!this.isConfigured()) {
-                // Simulate success in demo mode
-                return {
-                    success: true,
-                    messageId: `demo_${Date.now()}`,
-                    status: 'sent'
-                };
-            }
-
-            const payload = {
-                to: groupId,
-                text: message
-            };
-
-            const response = await this.axiosInstance.post(`/api/send-message`, payload);
+            // Always try to send real message first
+            console.log(`📤 Attempting to send real message to ${groupId}`);
             
-            if (response.data.success) {
-                return {
-                    success: true,
-                    messageId: response.data.messageId,
-                    status: response.data.status
+            try {
+                const payload = {
+                    to: groupId,
+                    text: message
                 };
-            } else {
-                throw new Error(response.data.message || 'Failed to send message');
-            }
-            
-        } catch (error) {
-            console.error(`❌ Error sending message to ${groupId}:`, error.message);
-            return {
-                success: false,
-                error: error.message
-            };
+
+                const response = await this.axiosInstance.post(`/api/send-message`, payload);
+                
+                if (response.data.success) {
+                    console.log(`✅ Message sent successfully to ${groupId}`);
+                    return {
+                        success: true,
+                        messageId: response.data.messageId,
+                        status: response.data.status
+                    };
+                } else {
+                    throw new Error(response.data.message || 'Failed to send message');
+                }
+            } catch (apiError) {
+                console.log(`⚠️ Failed to send real message: ${apiError.message}`);
+                
+                // Only simulate success if we're completely unconfigured
+                if (!this.isConfigured()) {
+                    console.log('📱 Simulating success in demo mode');
+                    return {
+                        success: true,
+                        messageId: `demo_${Date.now()}`,
+                        status: 'sent'
+                    };
+                }
+                
+                            // Re-throw the error if we're configured but API failed
+            throw apiError;
         }
+        
+    } catch (error) {
+        console.error(`❌ Error sending message to ${groupId}:`, error.message);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
     }
 
     // Send messages to multiple groups with delay
