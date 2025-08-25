@@ -434,10 +434,52 @@
         <!-- Step 3: Send Messages -->
         <div class="section">
             <h3><span class="step-number">3</span>Send Messages</h3>
-            <form id="messageForm">
-                <button type="submit">🚀 Send Messages to Selected Groups</button>
-            </form>
-            <div id="sendStatus"></div>
+            <div class="send-mode-toggle">
+                <div class="toggle-container">
+                    <span class="toggle-label">Send Now</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="sendModeToggle" onchange="toggleSendMode()">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="toggle-label">Schedule</span>
+                </div>
+            </div>
+            
+            <!-- Send Now Mode -->
+            <div id="sendNowMode" class="send-mode">
+                <form id="messageForm">
+                    <button type="submit">🚀 Send Messages to Selected Groups</button>
+                </form>
+                <div id="sendStatus"></div>
+            </div>
+            
+            <!-- Schedule Mode -->
+            <div id="scheduleMode" class="send-mode" style="display: none;">
+                <div class="schedule-controls">
+                    <div class="schedule-inputs">
+                        <div class="input-group">
+                            <label for="scheduleDate">Date:</label>
+                            <input type="date" id="scheduleDate" min="">
+                        </div>
+                        <div class="input-group">
+                            <label for="scheduleTime">Time (IST):</label>
+                            <input type="time" id="scheduleTime">
+                        </div>
+                        <button id="scheduleBtn" onclick="scheduleMessage()" class="schedule-btn">
+                            📅 Schedule Message
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Scheduled Messages List -->
+                <div class="scheduled-jobs">
+                    <h4>Scheduled Messages</h4>
+                    <button onclick="loadScheduledJobs()" class="refresh-btn">🔄 Refresh</button>
+                    <div id="scheduledJobsList" class="jobs-list">
+                        <div class="no-jobs">No scheduled messages</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -464,6 +506,9 @@
                 groupsStatus.className = 'status info';
                 groupsStatus.textContent = '💡 Groups loaded automatically! Select which ones to message this week.';
             }, 1000);
+            
+            // Set default send mode
+            toggleSendMode();
         });
 
         // Load all actual groups from the backend
@@ -576,14 +621,34 @@
             updateDropdownText();
         }
 
+        // Helper Functions
+        function getSelectedGroups() {
+            return selectedGroups;
+        }
+
         function clearSelection() {
             selectedGroups = [];
-            document.querySelectorAll('#dropdownList .group-item').forEach(item => {
-                item.classList.remove('selected');
-            });
-            updateSelectionInfo();
-            updateSelectedTags();
-            updateDropdownText();
+            updateSelectionDisplay();
+        }
+
+        function updateSelectionDisplay() {
+            const display = document.getElementById('groupsDisplay');
+            if (selectedGroups.length === 0) {
+                display.innerHTML = '<div class="no-selection">No groups selected</div>';
+            } else {
+                const groupsHTML = selectedGroups.map(group => `
+                    <div class="selected-group">
+                        <span>${group.name}</span>
+                        <button onclick="removeGroup('${group.id}')" class="remove-btn">×</button>
+                    </div>
+                `).join('');
+                display.innerHTML = groupsHTML;
+            }
+        }
+
+        function removeGroup(groupId) {
+            selectedGroups = selectedGroups.filter(g => g.id !== groupId);
+            updateSelectionDisplay();
         }
 
         function updateDropdownText() {
@@ -820,12 +885,285 @@
         });
 
         // Logout function
-        function logoutUser() {
-            // Clear session storage
-            sessionStorage.removeItem('currentUserSession');
+        async function logoutUser() {
+            try {
+                console.log('🚪 User clicked logout - deleting all sessions...');
+                
+                // Show loading state
+                const logoutBtn = document.getElementById('logoutBtn');
+                const originalText = logoutBtn.textContent;
+                logoutBtn.textContent = '🔄 Logging out...';
+                logoutBtn.disabled = true;
+                
+                // Call the logout endpoint to delete all sessions
+                const response = await fetch('/api/logout-all-sessions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('✅ Logout successful:', result.message);
+                    
+                    // Clear session storage
+                    sessionStorage.removeItem('currentUserSession');
+                    
+                    // Redirect to authentication page
+                    window.location.href = '/';
+                } else {
+                    console.error('❌ Logout failed:', result.message);
+                    alert('Logout failed: ' + result.message);
+                }
+                
+            } catch (error) {
+                console.error('❌ Logout error:', error);
+                alert('Logout error: ' + error.message);
+            } finally {
+                // Reset button state
+                const logoutBtn = document.getElementById('logoutBtn');
+                logoutBtn.textContent = 'Logout';
+                logoutBtn.disabled = false;
+            }
+        }
+
+        // Send Mode Toggle Functions
+        function toggleSendMode() {
+            const sendModeToggle = document.getElementById('sendModeToggle');
+            const sendNowMode = document.getElementById('sendNowMode');
+            const scheduleMode = document.getElementById('scheduleMode');
             
-            // Redirect to authentication page
-            window.location.href = '/';
+            if (sendModeToggle.checked) {
+                // Schedule Mode
+                sendNowMode.style.display = 'none';
+                scheduleMode.style.display = 'block';
+                setMinDate();
+            } else {
+                // Send Now Mode
+                sendNowMode.style.display = 'block';
+                scheduleMode.style.display = 'none';
+            }
+        }
+
+        function setMinDate() {
+            const today = new Date();
+            
+            const dateInput = document.getElementById('scheduleDate');
+            dateInput.min = today.toISOString().split('T')[0];
+            
+            // Set default time to current time + 1 hour
+            const timeInput = document.getElementById('scheduleTime');
+            const currentHour = today.getHours();
+            const currentMinute = today.getMinutes();
+            const nextHour = currentHour + 1;
+            timeInput.value = `${nextHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+        }
+
+        async function scheduleMessage() {
+            const scheduleBtn = document.getElementById('scheduleBtn');
+            const originalText = scheduleBtn.textContent;
+            
+            try {
+                // Validate inputs
+                const message = document.getElementById('messageInput').value.trim();
+                const selectedGroups = getSelectedGroups();
+                const scheduleDate = document.getElementById('scheduleDate').value;
+                const scheduleTime = document.getElementById('scheduleTime').value;
+                
+                if (!message) {
+                    alert('Please enter a message to schedule');
+                    return;
+                }
+                
+                if (selectedGroups.length === 0) {
+                    alert('Please select at least one group');
+                    return;
+                }
+                
+                if (!scheduleDate || !scheduleTime) {
+                    alert('Please select both date and time');
+                    return;
+                }
+                
+                // Show loading state
+                scheduleBtn.textContent = '🔄 Scheduling...';
+                scheduleBtn.disabled = true;
+                
+                // Build UTC ISO from IST (UTC+05:30)
+                const [year, month, day] = scheduleDate.split('-').map(Number);
+                const [hours, minutes] = scheduleTime.split(':').map(Number);
+                
+                // Convert IST to UTC (IST = UTC+05:30)
+                const utcMs = Date.UTC(year, month - 1, day, hours - 5, minutes - 30, 0);
+                
+                // Check if scheduled time is at least 1 minute in the future
+                if (utcMs < Date.now() + 60000) {
+                    alert('Please choose a time at least 1 minute in the future');
+                    return;
+                }
+                
+                const isoUtc = new Date(utcMs).toISOString();
+                
+                // Get user session
+                const userSession = JSON.parse(sessionStorage.getItem('currentUserSession'));
+                if (!userSession || !userSession.apiKey) {
+                    throw new Error('User session not found. Please login again.');
+                }
+                
+                // Schedule the message
+                const response = await fetch('/api/schedule', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${userSession.apiKey}`,
+                        'X-User-Phone': userSession.phoneNumber
+                    },
+                    body: JSON.stringify({
+                        groupIds: selectedGroups.map(g => g.id),
+                        message: message,
+                        scheduledAt: isoUtc
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Format IST time for display
+                    const humanIST = new Intl.DateTimeFormat('en-IN', { 
+                        dateStyle: 'medium', 
+                        timeStyle: 'short', 
+                        timeZone: 'Asia/Kolkata' 
+                    }).format(new Date(isoUtc));
+                    
+                    alert(`✅ Message scheduled successfully for ${humanIST} IST to ${selectedGroups.length} groups`);
+                    
+                    // Clear form
+                    document.getElementById('messageInput').value = '';
+                    clearSelection();
+                    
+                    // Reset to Send Now mode
+                    document.getElementById('sendModeToggle').checked = false;
+                    toggleSendMode();
+                    
+                    // Refresh scheduled jobs list
+                    loadScheduledJobs();
+                    
+                } else {
+                    throw new Error(result.message || 'Failed to schedule message');
+                }
+                
+            } catch (error) {
+                console.error('Error scheduling message:', error);
+                alert('❌ Error scheduling message: ' + error.message);
+            } finally {
+                // Reset button state
+                scheduleBtn.textContent = '📅 Schedule Message';
+                scheduleBtn.disabled = false;
+            }
+        }
+
+        async function loadScheduledJobs() {
+            const jobsList = document.getElementById('scheduledJobsList');
+            
+            try {
+                // Get user session
+                const userSession = JSON.parse(sessionStorage.getItem('currentUserSession'));
+                if (!userSession || !userSession.apiKey) {
+                    throw new Error('User session not found. Please login again.');
+                }
+                
+                const response = await fetch('/api/schedule', {
+                    headers: {
+                        'Authorization': `Bearer ${userSession.apiKey}`,
+                        'X-User-Phone': userSession.phoneNumber
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayScheduledJobs(result.data);
+                } else {
+                    throw new Error(result.message || 'Failed to load scheduled jobs');
+                }
+                
+            } catch (error) {
+                console.error('Error loading scheduled jobs:', error);
+                jobsList.innerHTML = '<div class="no-jobs">Error loading scheduled jobs: ' + error.message + '</div>';
+            }
+        }
+
+        function displayScheduledJobs(jobs) {
+            const jobsList = document.getElementById('scheduledJobsList');
+            
+            if (!jobs || jobs.length === 0) {
+                jobsList.innerHTML = '<div class="no-jobs">No scheduled messages</div>';
+                return;
+            }
+            
+            const jobsHTML = jobs.map(job => {
+                const scheduledTime = new Date(job.runAt);
+                const humanIST = new Intl.DateTimeFormat('en-IN', { 
+                    dateStyle: 'medium', 
+                    timeStyle: 'short', 
+                    timeZone: 'Asia/Kolkata' 
+                }).format(scheduledTime);
+                
+                const messagePreview = job.message.length > 50 ? 
+                    job.message.substring(0, 50) + '...' : job.message;
+                
+                return `
+                    <div class="job-item">
+                        <div class="job-info">
+                            <div class="job-time">📅 ${humanIST} IST</div>
+                            <div class="job-groups">📱 ${job.groupIds.length} group(s)</div>
+                            <div class="job-message">💬 ${messagePreview}</div>
+                        </div>
+                        <button class="cancel-btn" onclick="cancelJob('${job.id}')">
+                            ❌ Cancel
+                        </button>
+                    </div>
+                `;
+            }).join('');
+            
+            jobsList.innerHTML = jobsHTML;
+        }
+
+        async function cancelJob(jobId) {
+            if (!confirm('Are you sure you want to cancel this scheduled message?')) {
+                return;
+            }
+            
+            try {
+                // Get user session
+                const userSession = JSON.parse(sessionStorage.getItem('currentUserSession'));
+                if (!userSession || !userSession.apiKey) {
+                    throw new Error('User session not found. Please login again.');
+                }
+                
+                const response = await fetch(`/api/schedule/${jobId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${userSession.apiKey}`,
+                        'X-User-Phone': userSession.phoneNumber
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('✅ Scheduled message cancelled successfully');
+                    loadScheduledJobs(); // Refresh the list
+                } else {
+                    throw new Error(result.message || 'Failed to cancel job');
+                }
+                
+            } catch (error) {
+                console.error('Error cancelling job:', error);
+                alert('❌ Error cancelling job: ' + error.message);
+            }
         }
     </script>
 </body>

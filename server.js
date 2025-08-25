@@ -3,6 +3,8 @@ const path = require('path');
 const { sendMessagesFromSheet, getWhatsAppGroups, getDeviceInfo, wasenderService } = require('./message_sender');
 const AuthService = require('./auth_service');
 const WasenderService = require('./wasender_service');
+const QRGenerationService = require('./qr_generation_service');
+const { scheduleBroadcast, cancelJob, listJobs, getJob } = require('./scheduler');
 require('dotenv').config();
 
 const app = express();
@@ -386,4 +388,324 @@ app.listen(PORT, () => {
     
     console.log('📊 Google Sheets validation working perfectly!');
     console.log('🌍 Compatible with all platforms (Mac, Windows, Linux)!');
+});
+
+// ===== QR GENERATION ENDPOINTS =====
+app.post('/api/generate-qr', async (req, res) => {
+    try {
+        const { phone } = req.body;
+        if (!phone) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Phone number is required' 
+            });
+        }
+        
+        console.log('📱 Generating QR code for phone:', phone);
+        
+        const qrService = new QRGenerationService();
+        const result = await qrService.generateQRForNewUser(phone);
+        
+        if (result.success) {
+            res.status(200).json({
+                success: true,
+                message: 'QR code generated successfully',
+                data: {
+                    sessionId: result.sessionId,
+                    sessionApiKey: result.sessionApiKey,
+                    qrImage: result.qrImage,
+                    qrCode: result.qrCode,
+                    phone: result.phone
+                }
+            });
+        } else {
+            res.status(500).json({ 
+                success: false, 
+                message: 'Failed to generate QR code' 
+            });
+        }
+        
+    } catch (error) {
+        console.error('❌ QR generation error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Failed to generate QR code' 
+        });
+    }
+});
+
+app.post('/api/check-connection', async (req, res) => {
+    try {
+        const { sessionApiKey } = req.body;
+        if (!sessionApiKey) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Session API key is required' 
+            });
+        }
+        
+        const qrService = new QRGenerationService();
+        const result = await qrService.checkConnectionStatus(sessionApiKey);
+        
+        res.status(200).json({ 
+            success: true, 
+            data: result 
+        });
+        
+    } catch (error) {
+        console.error('❌ Connection check error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Failed to check connection' 
+        });
+    }
+});
+
+app.get('/api/session-details/:sessionId', async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        if (!sessionId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Session ID is required' 
+            });
+        }
+        
+        const qrService = new QRGenerationService();
+        const result = await qrService.getSessionDetails(sessionId);
+        
+        res.status(200).json({ 
+            success: true, 
+            data: result 
+        });
+        
+    } catch (error) {
+        console.error('❌ Session details error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Failed to get session details' 
+        });
+    }
+});
+
+app.delete('/api/session/:sessionId', async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        if (!sessionId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Session ID is required' 
+            });
+        }
+        
+        const qrService = new QRGenerationService();
+        const result = await qrService.deleteSession(sessionId);
+        
+        res.status(200).json({ 
+            success: true, 
+            message: 'Session deleted successfully',
+            data: result 
+        });
+        
+    } catch (error) {
+        console.error('❌ Session deletion error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Failed to delete session' 
+        });
+    }
+});
+
+app.post('/api/logout-all-sessions', async (req, res) => {
+    try {
+        console.log('🚪 User requested logout - deleting all sessions');
+        
+        const qrService = new QRGenerationService();
+        const result = await qrService.deleteAllSessions();
+        
+        res.status(200).json({
+            success: true,
+            message: 'Logout successful - all sessions deleted',
+            data: result
+        });
+        
+    } catch (error) {
+        console.error('❌ Logout error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Failed to logout' 
+        });
+    }
+});
+
+// ===== MESSAGE SCHEDULING ENDPOINTS =====
+app.post('/api/schedule', async (req, res) => {
+    try {
+        const { groupIds, message, scheduledAt } = req.body;
+        
+        if (!groupIds || !Array.isArray(groupIds) || groupIds.length === 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Group IDs array is required' 
+            });
+        }
+        
+        if (!message || message.trim() === '') {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Message is required' 
+            });
+        }
+        
+        if (!scheduledAt) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'scheduledAt (ISO datetime) is required' 
+            });
+        }
+        
+        const runAt = new Date(scheduledAt);
+        if (isNaN(runAt.getTime())) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid scheduledAt format' 
+            });
+        }
+        
+        // Check if scheduled time is in the future
+        const now = Date.now();
+        if (runAt.getTime() <= now) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Scheduled time must be in the future' 
+            });
+        }
+        
+        console.log('📅 Scheduling message for:', runAt.toISOString(), 'to', groupIds.length, 'groups');
+        
+        // Get user session from headers
+        const userApiKey = req.headers.authorization?.replace('Bearer ', '');
+        const userPhone = req.headers['x-user-phone'];
+        
+        if (!userApiKey || !userPhone) {
+            return res.status(401).json({
+                success: false,
+                message: 'User authentication required'
+            });
+        }
+        
+        const job = scheduleBroadcast({ 
+            groupIds, 
+            message: message.trim(), 
+            runAtMs: runAt.getTime(),
+            apiKey: userApiKey,
+            phoneNumber: userPhone
+        });
+        
+        res.status(200).json({
+            success: true,
+            message: 'Message scheduled successfully',
+            data: {
+                jobId: job.id,
+                scheduledFor: new Date(job.runAtMs).toISOString(),
+                groupsCount: groupIds.length
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Schedule error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Failed to schedule message' 
+        });
+    }
+});
+
+app.get('/api/schedule', async (req, res) => {
+    try {
+        const jobs = listJobs();
+        res.status(200).json({
+            success: true,
+            message: 'Scheduled jobs retrieved successfully',
+            data: jobs
+        });
+    } catch (error) {
+        console.error('❌ Get schedule error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Failed to get scheduled jobs' 
+        });
+    }
+});
+
+app.delete('/api/schedule/:jobId', async (req, res) => {
+    try {
+        const { jobId } = req.params;
+        
+        if (!jobId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Job ID is required' 
+            });
+        }
+        
+        const cancelled = cancelJob(jobId);
+        
+        if (cancelled) {
+            res.status(200).json({
+                success: true,
+                message: 'Job cancelled successfully',
+                data: { jobId }
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                message: 'Job not found',
+                data: { jobId }
+            });
+        }
+        
+    } catch (error) {
+        console.error('❌ Cancel schedule error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Failed to cancel job' 
+        });
+    }
+});
+
+app.get('/api/schedule/:jobId', async (req, res) => {
+    try {
+        const { jobId } = req.params;
+        
+        if (!jobId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Job ID is required' 
+            });
+        }
+        
+        const job = getJob(jobId);
+        
+        if (job) {
+            res.status(200).json({
+                success: true,
+                message: 'Job details retrieved successfully',
+                data: job
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                message: 'Job not found',
+                data: { jobId }
+            });
+        }
+        
+    } catch (error) {
+        console.error('❌ Get job details error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: error.message || 'Failed to get job details' 
+        });
+    }
 });
