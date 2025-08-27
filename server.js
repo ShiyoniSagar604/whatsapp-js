@@ -1,5 +1,7 @@
 const express = require('express');
 const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
 const { sendMessagesFromSheet, getWhatsAppGroups, getDeviceInfo, wasenderService } = require('./message_sender');
 const AuthService = require('./auth_service');
 const WasenderService = require('./wasender_service');
@@ -13,9 +15,169 @@ app.use(express.json());
 // Initialize auth service
 const authService = new AuthService();
 
-// Function to send direct message to selected groups
-async function sendDirectMessage(message, selectedGroups, userApiKey = null) {
+// ===== DYNAMIC URL DETECTION =====
+
+// Function to automatically detect the correct base URL for images
+function getBaseUrl(req) {
+    // 1. Check environment variable first (for production)
+    if (process.env.PUBLIC_URL) {
+        console.log(`🌍 Using PUBLIC_URL from environment: ${process.env.PUBLIC_URL}`);
+        return process.env.PUBLIC_URL;
+    }
+    
+    // 2. Check if request is coming through ngrok (development)
+    const host = req.get('Host');
+    const protocol = req.get('X-Forwarded-Proto') || req.protocol;
+    
+    if (host && host.includes('ngrok')) {
+        const ngrokUrl = `https://${host}`; // ngrok always uses https
+        console.log(`🔗 Detected ngrok URL: ${ngrokUrl}`);
+        return ngrokUrl;
+    }
+    
+    // 3. Check for other reverse proxies (Heroku, Vercel, etc.)
+    if (req.headers['x-forwarded-host']) {
+        const forwardedProtocol = req.headers['x-forwarded-proto'] || 'https';
+        const forwardedUrl = `${forwardedProtocol}://${req.headers['x-forwarded-host']}`;
+        console.log(`🔗 Detected forwarded URL: ${forwardedUrl}`);
+        return forwardedUrl;
+    }
+    
+    // 4. Fallback to current request (localhost in development)
+    const fallbackUrl = `${protocol}://${host}`;
+    console.log(`🔗 Using fallback URL: ${fallbackUrl}`);
+    return fallbackUrl;
+}
+
+// ===== IMAGE UPLOAD CONFIGURATION =====
+
+// Configure multer for image uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = './uploads';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        // Create unique filename with timestamp
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const sanitizedName = file.originalname.replace(/[^a-zA-Z0-9.]/g, '');
+        cb(null, 'whatsapp-' + uniqueSuffix + '-' + sanitizedName);
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: { 
+        fileSize: 5 * 1024 * 1024, // 5MB limit
+        files: 1 // Only one file at a time
+    },
+    fileFilter: (req, file, cb) => {
+        // Only allow specific image types
+        const allowedTypes = [
+            'image/jpeg', 
+            'image/jpg', 
+            'image/png', 
+            'image/webp'
+        ];
+        
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Invalid file type. Only JPEG, PNG, and WEBP images are allowed.'), false);
+        }
+    }
+});
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ===== IMAGE UPLOAD ENDPOINT =====
+app.post('/api/upload-image', upload.single('file'), async (req, res) => {
     try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                error: 'No image file provided'
+            });
+        }
+
+        // Automatically detect the correct base URL
+        const baseUrl = getBaseUrl(req);
+        const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
+
+        console.log(`📷 Image uploaded: ${req.file.filename}`);
+        console.log(`🔗 Base URL detected: ${baseUrl}`);
+        console.log(`🔗 Full Image URL: ${imageUrl}`);
+        
+        // Warn if still localhost
+        if (imageUrl.includes('localhost') || imageUrl.includes('127.0.0.1')) {
+            console.warn(`⚠️ WARNING: Using localhost URL. WasenderAPI will reject this.`);
+            console.warn(`💡 Access via ngrok URL to fix this issue`);
+        }
+
+        res.json({
+            success: true,
+            message: 'Image uploaded successfully',
+            imageUrl: imageUrl,
+            filename: req.file.filename,
+            originalname: req.file.originalname,
+            size: req.file.size,
+            mimetype: req.file.mimetype,
+            baseUrl: baseUrl, // Include for debugging
+            isLocalhost: imageUrl.includes('localhost')
+        });
+
+    } catch (error) {
+        console.error('❌ Image upload error:', error);
+        
+        // Handle multer-specific errors
+        if (error instanceof multer.MulterError) {
+            if (error.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Image file size must be less than 5MB'
+                });
+            }
+        }
+        
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to upload image'
+        });
+    }
+});
+
+// ===== DEBUG ENDPOINT =====
+app.get('/api/debug/urls', (req, res) => {
+    const baseUrl = getBaseUrl(req);
+    res.json({
+        detectedBaseUrl: baseUrl,
+        requestHeaders: {
+            host: req.get('Host'),
+            'x-forwarded-proto': req.get('X-Forwarded-Proto'),
+            'x-forwarded-host': req.get('X-Forwarded-Host'),
+            protocol: req.protocol
+        },
+        environment: {
+            PUBLIC_URL: process.env.PUBLIC_URL,
+            NODE_ENV: process.env.NODE_ENV
+        }
+    });
+});
+
+// ===== ENHANCED SEND MESSAGE FUNCTION =====
+
+// Function to send direct message to selected groups (Enhanced for images)
+async function sendDirectMessage(message, selectedGroups, userApiKey = null, imageUrl = null) {
+    try {
+        console.log(`📤 Sending message with image support:`);
+        console.log(`📝 Message: ${message || '[No text]'}`);
+        console.log(`🖼️ Image URL: ${imageUrl || '[No image]'}`);
+        console.log(`📋 Groups: ${selectedGroups.length}`);
+
         // Check if we have a user API key (multi-user mode)
         if (userApiKey) {
             // Use user's API key to send messages
@@ -25,11 +187,13 @@ async function sendDirectMessage(message, selectedGroups, userApiKey = null) {
                 throw new Error('No groups selected. Please select groups on the frontend first.');
             }
 
-            console.log(`📋 Found ${selectedGroups.length} selected groups to send to`);
-            console.log(`📝 Message: ${message}`);
-
-            // Send messages using user's WasenderApi session
-            const sendResults = await userWasenderService.sendMessagesToGroups(selectedGroups, message);
+            // Send messages using user's WasenderApi session (with image support)
+            const sendResults = await userWasenderService.sendMessagesToGroups(
+                selectedGroups, 
+                message, 
+                60000, // 1 minute delay
+                imageUrl
+            );
             
             return {
                 success: true,
@@ -37,7 +201,8 @@ async function sendDirectMessage(message, selectedGroups, userApiKey = null) {
                 totalGroups: selectedGroups.length,
                 successCount: sendResults.successCount || 0,
                 failedCount: selectedGroups.length - (sendResults.successCount || 0),
-                results: sendResults.results || []
+                results: sendResults.results || [],
+                hasImage: !!imageUrl
             };
         }
 
@@ -47,15 +212,15 @@ async function sendDirectMessage(message, selectedGroups, userApiKey = null) {
             return {
                 success: true,
                 demo: true,
-                totalGroups: 4,
-                successCount: 4,
+                totalGroups: selectedGroups.length,
+                successCount: selectedGroups.length,
                 failedCount: 0,
-                results: [
-                    { group: "Demo Group 1", success: true },
-                    { group: "Demo Group 2", success: true },
-                    { group: "Demo Group 3", success: true },
-                    { group: "Demo Group 4", success: true }
-                ]
+                results: selectedGroups.map((group, index) => ({
+                    group: group.name || `Demo Group ${index + 1}`,
+                    success: true,
+                    type: imageUrl ? 'image' : 'text'
+                })),
+                hasImage: !!imageUrl
             };
         }
 
@@ -64,11 +229,13 @@ async function sendDirectMessage(message, selectedGroups, userApiKey = null) {
             throw new Error('No groups selected. Please select groups on the frontend first.');
         }
 
-        console.log(`📋 Found ${selectedGroups.length} selected groups to send to`);
-        console.log(`📝 Message: ${message}`);
-
-        // Send messages using WasenderApi to only selected groups
-        const sendResults = await wasenderService.sendMessagesToGroups(selectedGroups, message);
+        // Send messages using WasenderApi to only selected groups (with image support)
+        const sendResults = await wasenderService.sendMessagesToGroups(
+            selectedGroups, 
+            message, 
+            60000, // 1 minute delay
+            imageUrl
+        );
         
         return {
             success: true,
@@ -76,14 +243,17 @@ async function sendDirectMessage(message, selectedGroups, userApiKey = null) {
             totalGroups: selectedGroups.length,
             successCount: sendResults.successCount || 0,
             failedCount: selectedGroups.length - (sendResults.successCount || 0),
-            results: sendResults.results || []
+            results: sendResults.results || [],
+            hasImage: !!imageUrl
         };
         
     } catch (error) {
         console.error('❌ Error in sendDirectMessage:', error.message);
         throw error;
     }
- }
+}
+
+// ===== EXISTING ROUTES =====
 
 // Serve the authentication page as main page
 app.get('/', (req, res) => {
@@ -265,15 +435,16 @@ app.post('/api/auth/logout', async (req, res) => {
     }
 });
 
-// Send messages endpoint
+// ===== ENHANCED SEND MESSAGES ENDPOINT =====
 app.post('/send-messages', async (req, res) => {
     try {
-        const { message, selectedGroups } = req.body;
+        const { message, selectedGroups, imageUrl, hasImage } = req.body;
         
-        if (!message || message.trim() === '') {
+        // Validation: Must have either message or image
+        if ((!message || message.trim() === '') && !hasImage) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Please provide a message to send' 
+                message: 'Please provide a message or upload an image' 
             });
         }
 
@@ -284,8 +455,10 @@ app.post('/send-messages', async (req, res) => {
             });
         }
 
-        console.log('📤 Received request to send message:', message);
-        console.log('📋 Selected groups:', selectedGroups.length);
+        console.log('📤 Received enhanced message request:');
+        console.log(`📝 Message: ${message || '[No text]'}`);
+        console.log(`🖼️ Image: ${hasImage ? 'Yes' : 'No'}`);
+        console.log(`📋 Selected groups: ${selectedGroups.length}`);
         
         // Check if request has authorization header (multi-user mode)
         let userApiKey = null;
@@ -295,13 +468,21 @@ app.post('/send-messages', async (req, res) => {
             console.log('🔐 Using user API key for message sending');
         }
         
-        const result = await sendDirectMessage(message, selectedGroups, userApiKey);
+        const result = await sendDirectMessage(
+            message, 
+            selectedGroups, 
+            userApiKey, 
+            hasImage ? imageUrl : null
+        );
         
         let responseMessage;
         if (result.demo) {
-            responseMessage = `✅ Message prepared successfully! Found ${result.totalGroups} groups.
+            const contentType = result.hasImage ? 
+                (message ? 'message with image' : 'image') : 'message';
+            
+            responseMessage = `✅ ${contentType.charAt(0).toUpperCase() + contentType.slice(1)} prepared successfully! Found ${result.totalGroups} groups.
 
-📝 Your message is ready to send!
+📝 Your content is ready to send!
 
 ⚠️ Note: Currently running in demo mode. To enable actual WhatsApp messaging:
 1. Sign up for WasenderApi at https://wasender.com
@@ -311,13 +492,16 @@ app.post('/send-messages', async (req, res) => {
 
 🎯 Your business workflow is ready - just needs WasenderApi configuration!`;
         } else {
-            responseMessage = `🎉 Success! Messages sent successfully!
+            const contentType = result.hasImage ? 
+                (message ? 'messages with images' : 'images') : 'messages';
+            
+            responseMessage = `🎉 Success! ${contentType.charAt(0).toUpperCase() + contentType.slice(1)} sent successfully!
 
 📊 Results:
-✅ Sent: ${result.successCount}/${result.totalGroups} messages
-${result.failedCount > 0 ? `❌ Failed: ${result.failedCount} messages` : ''}
+✅ Sent: ${result.successCount}/${result.totalGroups} ${contentType}
+${result.failedCount > 0 ? `❌ Failed: ${result.failedCount} ${contentType}` : ''}
 
-📱 All messages have been delivered to your WhatsApp groups!`;
+📱 All content has been delivered to your WhatsApp groups!`;
         }
         
         return res.json({ 
@@ -366,29 +550,14 @@ app.get('/health', (req, res) => {
     res.json({ 
         status: 'healthy', 
         timestamp: new Date().toISOString(),
-        wasenderConfigured: !!(process.env.WASENDER_API_KEY && process.env.WASENDER_DEVICE_ID)
+        wasenderConfigured: !!(process.env.WASENDER_API_KEY && process.env.WASENDER_DEVICE_ID),
+        uploadsDirectory: fs.existsSync('./uploads') ? 'exists' : 'missing',
+        baseUrl: getBaseUrl(req)
     });
 });
 
 // Serve static files AFTER custom routes
 app.use(express.static(__dirname));
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log('🚀 WhatsApp Bot Server with WasenderApi');
-    console.log(`📡 Server running on http://localhost:${PORT}`);
-    
-    if (process.env.WASENDER_API_KEY && process.env.WASENDER_DEVICE_ID) {
-        console.log('✅ WasenderApi configured - Ready for production messaging!');
-        console.log('📱 Check device status: http://localhost:' + PORT + '/api/device-status');
-    } else {
-        console.log('⚠️ WasenderApi not configured - Running in demo mode');
-        console.log('💡 Add WASENDER_API_KEY and WASENDER_DEVICE_ID to .env file to enable messaging');
-    }
-    
-    console.log('📊 Google Sheets validation working perfectly!');
-    console.log('🌍 Compatible with all platforms (Mac, Windows, Linux)!');
-});
 
 // ===== QR GENERATION ENDPOINTS =====
 app.post('/api/generate-qr', async (req, res) => {
@@ -538,10 +707,10 @@ app.post('/api/logout-all-sessions', async (req, res) => {
     }
 });
 
-// ===== MESSAGE SCHEDULING ENDPOINTS =====
+// ===== ENHANCED MESSAGE SCHEDULING ENDPOINTS =====
 app.post('/api/schedule', async (req, res) => {
     try {
-        const { groupIds, message, scheduledAt } = req.body;
+        const { groupIds, message, scheduledAt, imageUrl, hasImage } = req.body;
         
         if (!groupIds || !Array.isArray(groupIds) || groupIds.length === 0) {
             return res.status(400).json({ 
@@ -550,10 +719,11 @@ app.post('/api/schedule', async (req, res) => {
             });
         }
         
-        if (!message || message.trim() === '') {
+        // Must have either message or image
+        if ((!message || message.trim() === '') && !hasImage) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Message is required' 
+                message: 'Message or image is required' 
             });
         }
         
@@ -581,7 +751,10 @@ app.post('/api/schedule', async (req, res) => {
             });
         }
         
-        console.log('📅 Scheduling message for:', runAt.toISOString(), 'to', groupIds.length, 'groups');
+        const contentType = hasImage ? 
+            (message ? 'message with image' : 'image') : 'message';
+        
+        console.log(`📅 Scheduling ${contentType} for:`, runAt.toISOString(), 'to', groupIds.length, 'groups');
         
         // Get user session from headers
         const userApiKey = req.headers.authorization?.replace('Bearer ', '');
@@ -594,21 +767,31 @@ app.post('/api/schedule', async (req, res) => {
             });
         }
         
-        const job = scheduleBroadcast({ 
+        const jobData = { 
             groupIds, 
-            message: message.trim(), 
+            message: message?.trim() || '', 
             runAtMs: runAt.getTime(),
             apiKey: userApiKey,
             phoneNumber: userPhone
-        });
+        };
+
+        // Add image data if present
+        if (hasImage && imageUrl) {
+            jobData.imageUrl = imageUrl;
+            jobData.hasImage = true;
+        }
+        
+        const job = scheduleBroadcast(jobData);
         
         res.status(200).json({
             success: true,
-            message: 'Message scheduled successfully',
+            message: `${contentType.charAt(0).toUpperCase() + contentType.slice(1)} scheduled successfully`,
             data: {
                 jobId: job.id,
                 scheduledFor: new Date(job.runAtMs).toISOString(),
-                groupsCount: groupIds.length
+                groupsCount: groupIds.length,
+                hasImage: !!hasImage,
+                contentType: contentType
             }
         });
         
@@ -708,4 +891,65 @@ app.get('/api/schedule/:jobId', async (req, res) => {
             message: error.message || 'Failed to get job details' 
         });
     }
+});
+
+// ===== ERROR HANDLING MIDDLEWARE =====
+
+// Handle multer errors
+app.use((error, req, res, next) => {
+    if (error instanceof multer.MulterError) {
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({
+                success: false,
+                error: 'Image file size must be less than 5MB'
+            });
+        }
+        return res.status(400).json({
+            success: false,
+            error: error.message
+        });
+    }
+    next(error);
+});
+
+// Global error handler
+app.use((error, req, res, next) => {
+    console.error('❌ Unhandled error:', error);
+    res.status(500).json({
+        success: false,
+        error: 'Internal server error'
+    });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log('🚀 Enhanced WhatsApp Bot Server with Image Support');
+    console.log(`📡 Server running on http://localhost:${PORT}`);
+    
+    // Check and create uploads directory
+    const uploadDir = './uploads';
+    if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+        console.log('📁 Created uploads directory');
+    }
+    
+    // Log configuration status
+    console.log('\n📋 Configuration Status:');
+    console.log(`🔑 Master API Key: ${process.env.WASENDER_MASTER_API_KEY ? 'SET' : 'NOT SET'}`);
+    console.log(`🌍 API URL: ${process.env.WASENDER_API_URL}`);
+    console.log(`📁 Uploads Directory: ${fs.existsSync(uploadDir) ? 'Ready' : 'Missing'}`);
+    console.log(`🔗 PUBLIC_URL: ${process.env.PUBLIC_URL || 'Auto-detect mode'}`);
+    
+    if (process.env.WASENDER_API_KEY && process.env.WASENDER_DEVICE_ID) {
+        console.log('✅ Single-user WasenderApi configured - Ready for production messaging with images!');
+        console.log('📱 Check device status: http://localhost:' + PORT + '/api/device-status');
+    } else {
+        console.log('⚠️ Single-user WasenderApi not configured - Multi-user mode enabled');
+    }
+    
+    console.log('\n🔗 Important URLs:');
+    console.log('📷 Image upload endpoint: http://localhost:' + PORT + '/api/upload-image');
+    console.log('🔍 URL debug endpoint: http://localhost:' + PORT + '/api/debug/urls');
+    console.log('📊 Health check: http://localhost:' + PORT + '/health');
+    console.log('\n🌍 For ngrok access, use: https://your-ngrok-url.ngrok-free.app');
 });

@@ -109,7 +109,7 @@
             font-size: 14px;
             box-sizing: border-box;
             resize: vertical;
-            min-height: 100px;
+            min-height: 120px;
             font-family: Arial, sans-serif;
         }
 
@@ -270,7 +270,7 @@
 
         .dropdown-wrapper input {
             width: 100%;
-            padding: 12px 40px 12px 12px; /* Adjust padding for arrow */
+            padding: 12px 40px 12px 12px;
             border: 1px solid #ddd;
             border-radius: 8px;
             font-size: 14px;
@@ -291,7 +291,7 @@
             top: 50%;
             transform: translateY(-50%);
             color: #666;
-            pointer-events: none; /* Allow clicks to pass through to input */
+            pointer-events: none;
             font-size: 12px;
             transition: transform 0.2s ease;
         }
@@ -303,7 +303,7 @@
         .dropdown-list {
             position: absolute;
             width: 100%;
-            max-height: 200px; /* Adjust as needed */
+            max-height: 200px;
             overflow-y: auto;
             border: 1px solid #ddd;
             border-radius: 8px;
@@ -370,6 +370,321 @@
         .selected-tag .remove-tag:hover {
             color: #ffebee;
         }
+
+        /* Enhanced Message Composer Styles */
+        .composer-container {
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .composer-toolbar {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            margin-right: 12px;
+        }
+
+        .toolbar-btn {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            padding: 6px 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #495057;
+            transition: all 0.2s;
+            margin: 0;
+        }
+
+        .toolbar-btn:hover {
+            background-color: #e9ecef;
+            border-color: #ced4da;
+        }
+
+        .toolbar-btn.active {
+            background-color: #25D366;
+            color: white;
+            border-color: #25D366;
+        }
+
+        .toolbar-btn.emoji-btn {
+            font-size: 16px;
+            padding: 6px;
+        }
+
+        .toolbar-separator {
+            width: 1px;
+            height: 20px;
+            background-color: #dee2e6;
+            margin: 0 4px;
+        }
+
+        .composer-textarea {
+            border: none;
+            padding: 12px 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: none;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .composer-textarea:focus {
+            outline: none;
+        }
+
+        .composer-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .char-count {
+            color: #6c757d;
+        }
+
+        .char-count.warning {
+            color: #ffc107;
+        }
+
+        .char-count.danger {
+            color: #dc3545;
+        }
+
+        /* Image Upload Styles */
+        .image-upload-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .image-upload-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .image-preview-container {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            display: none;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 6px;
+            display: block;
+            margin: 10px auto;
+        }
+
+        .image-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .remove-image-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .remove-image-btn:hover {
+            background-color: #c82333;
+        }
+
+        /* Send Mode Toggle Styles */
+        .send-mode-section {
+            margin: 20px 0;
+        }
+
+        .mode-toggle-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .mode-toggle {
+            display: flex;
+            background-color: #f1f3f4;
+            border-radius: 25px;
+            padding: 4px;
+            position: relative;
+        }
+
+        .mode-option {
+            padding: 8px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            color: #5f6368;
+            background: transparent;
+            border: none;
+            margin: 0;
+        }
+
+        .mode-option.active {
+            background-color: #25D366;
+            color: white;
+            box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+        }
+
+        .send-mode-content {
+            margin-top: 15px;
+        }
+
+        .schedule-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+            margin-bottom: 20px;
+        }
+
+        .schedule-controls input[type="date"],
+        .schedule-controls input[type="time"] {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .schedule-btn {
+            background-color: #ff9800;
+            padding: 10px 20px;
+            border-radius: 6px;
+            white-space: nowrap;
+            margin: 0;
+        }
+
+        .schedule-btn:hover {
+            background-color: #f57c00;
+        }
+
+        .scheduled-jobs {
+            margin-top: 20px;
+        }
+
+        .jobs-list {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .job-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .job-item:last-child {
+            border-bottom: none;
+        }
+
+        .job-info {
+            flex: 1;
+        }
+
+        .job-time {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .job-groups {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .job-message {
+            color: #888;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        .cancel-btn {
+            background-color: #dc3545;
+            font-size: 12px;
+            padding: 6px 12px;
+            margin: 0;
+        }
+
+        .refresh-btn {
+            background-color: #6c757d;
+            font-size: 12px;
+            padding: 6px 12px;
+            margin: 0 0 10px 0;
+        }
+
+        .no-jobs {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .schedule-controls {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .toolbar-group {
+                margin-right: 8px;
+            }
+
+            .composer-toolbar {
+                gap: 2px;
+            }
+        }
+
+        /* Hide file input */
+        #imageInput {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -391,7 +706,6 @@
             <div id="groupsStatus"></div>
             <div id="selectionInfo" class="selection-info" style="display: none;"></div>
             
-            <!-- New Dropdown and Tags System -->
             <div id="dropdownContainer" style="display: none;">
                 <div class="form-group">
                     <label for="groupDropdown">Select WhatsApp Groups:</label>
@@ -402,79 +716,133 @@
                     <div id="dropdownList" class="dropdown-list" style="display: none;"></div>
                 </div>
                 
-                <!-- Selected Groups Tags -->
                 <div id="selectedTags" class="selected-tags" style="display: none;"></div>
             </div>
             
-            <!-- Old Groups Display (will be hidden) -->
             <div id="groupsDisplay" class="groups-display" style="display: none;"></div>
         </div>
 
-        <!-- Step 2: Message Input -->
+        <!-- Step 2: Compose Message -->
         <div class="section">
-            <h3><span class="step-number">2</span>Enter Your Message</h3>
+            <h3><span class="step-number">2</span>Compose Message</h3>
+            
             <div class="instructions">
                 <h4>📝 Steps:</h4>
                 <ol>
                     <li><strong>Select groups above</strong> that you want to message</li>
-                    <li><strong>Type your message below</strong> in the message box</li>
-                    <li><strong>Click "Send Messages"</strong> to deliver to all selected groups</li>
+                    <li><strong>Compose your message below</strong> with formatting and media</li>
+                    <li><strong>Choose send mode</strong> - immediate or scheduled</li>
+                    <li><strong>Click "Send Message"</strong> to deliver to all selected groups</li>
                 </ol>
             </div>
-            
+
             <div class="form-group">
-                <label for="messageInput">Your Message:</label>
-                <textarea id="messageInput" name="messageInput" placeholder="Type your message here..." rows="4" required oninput="updateCharCount()"></textarea>
-                <div id="charCount" style="text-align: right; color: #666; font-size: 12px; margin-top: 5px;">0 / 4096 characters (WhatsApp limit)</div>
+                <label for="messageComposer">Message</label>
+                <div class="composer-container">
+                    <div class="composer-toolbar">
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn" onclick="formatText('bold')" title="Bold (Ctrl+B)">
+                                <strong>B</strong>
+                            </button>
+                            <button class="toolbar-btn" onclick="formatText('italic')" title="Italic (Ctrl+I)">
+                                <em>I</em>
+                            </button>
+                            <button class="toolbar-btn" onclick="formatText('underline')" title="Underline (Ctrl+U)">
+                                <u>U</u>
+                            </button>
+                        </div>
+                        
+                        <div class="toolbar-separator"></div>
+                        
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn emoji-btn" onclick="insertEmoji('😊')" title="Insert Emoji">😊</button>
+                            <button class="toolbar-btn emoji-btn" onclick="insertEmoji('🎉')" title="Insert Emoji">🎉</button>
+                            <button class="toolbar-btn emoji-btn" onclick="insertEmoji('👍')" title="Insert Emoji">👍</button>
+                        </div>
+                        
+                        <div class="toolbar-separator"></div>
+                        
+                        <div class="toolbar-group">
+                            <button class="toolbar-btn image-upload-btn" onclick="document.getElementById('imageInput').click()" title="Upload Image">
+                                📷 Image
+                            </button>
+                            <input type="file" id="imageInput" accept="image/*" onchange="handleImageUpload(event)">
+                        </div>
+                    </div>
+                    
+                    <textarea 
+                        id="messageComposer" 
+                        class="composer-textarea"
+                        placeholder="Type your message here... Use line breaks and formatting as needed."
+                        oninput="updateCharCount()"
+                        onkeydown="handleKeyboardShortcuts(event)">
+                    </textarea>
+                    
+                    <div class="composer-footer">
+                        <span>WhatsApp formatting: *bold*, _italic_, ~strikethrough~</span>
+                        <span id="charCount" class="char-count">0/4096</span>
+                    </div>
+                </div>
+                
+                <!-- Image Preview -->
+                <div id="imagePreviewContainer" class="image-preview-container">
+                    <img id="imagePreview" class="image-preview" alt="Image preview">
+                    <div class="image-info">
+                        <span id="imageInfo"></span>
+                        <button class="remove-image-btn" onclick="removeImage()">Remove</button>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Step 3: Send Messages -->
         <div class="section">
             <h3><span class="step-number">3</span>Send Messages</h3>
-            <div class="send-mode-toggle">
-                <div class="toggle-container">
-                    <span class="toggle-label">Send Now</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="sendModeToggle" onchange="toggleSendMode()">
-                        <span class="slider"></span>
-                    </label>
-                    <span class="toggle-label">Schedule</span>
-                </div>
-            </div>
             
-            <!-- Send Now Mode -->
-            <div id="sendNowMode" class="send-mode">
-                <form id="messageForm">
-                    <button type="submit">🚀 Send Messages to Selected Groups</button>
-                </form>
-                <div id="sendStatus"></div>
-            </div>
-            
-            <!-- Schedule Mode -->
-            <div id="scheduleMode" class="send-mode" style="display: none;">
-                <div class="schedule-controls">
-                    <div class="schedule-inputs">
-                        <div class="input-group">
-                            <label for="scheduleDate">Date:</label>
-                            <input type="date" id="scheduleDate" min="">
-                        </div>
-                        <div class="input-group">
-                            <label for="scheduleTime">Time (IST):</label>
-                            <input type="time" id="scheduleTime">
-                        </div>
-                        <button id="scheduleBtn" onclick="scheduleMessage()" class="schedule-btn">
-                            📅 Schedule Message
+            <div class="send-mode-section">
+                <div class="mode-toggle-container">
+                    <div class="mode-toggle">
+                        <button class="mode-option active" onclick="setSendMode('now')">
+                            Send now
+                        </button>
+                        <button class="mode-option" onclick="setSendMode('schedule')">
+                            Schedule
                         </button>
                     </div>
                 </div>
                 
-                <!-- Scheduled Messages List -->
-                <div class="scheduled-jobs">
-                    <h4>Scheduled Messages</h4>
-                    <button onclick="loadScheduledJobs()" class="refresh-btn">🔄 Refresh</button>
-                    <div id="scheduledJobsList" class="jobs-list">
-                        <div class="no-jobs">No scheduled messages</div>
+                <!-- Send Now Mode -->
+                <div id="sendNowMode" class="send-mode-content">
+                    <form id="messageForm">
+                        <button type="submit" style="background-color: #25D366; font-size: 16px; padding: 15px 30px;">
+                            🚀 Send Message
+                        </button>
+                    </form>
+                    <div id="sendStatus"></div>
+                </div>
+                
+                <!-- Schedule Mode -->
+                <div id="scheduleMode" class="send-mode-content" style="display: none;">
+                    <div class="schedule-controls">
+                        <div>
+                            <label for="scheduleDate">Date:</label>
+                            <input type="date" id="scheduleDate" min="">
+                        </div>
+                        <div>
+                            <label for="scheduleTime">Time (IST):</label>
+                            <input type="time" id="scheduleTime">
+                        </div>
+                        <button class="schedule-btn" onclick="scheduleMessage()">
+                            📅 Schedule Message
+                        </button>
+                    </div>
+                    
+                    <div class="scheduled-jobs">
+                        <h4>Scheduled Messages</h4>
+                        <button class="refresh-btn" onclick="loadScheduledJobs()">🔄 Refresh</button>
+                        <div id="scheduledJobsList" class="jobs-list">
+                            <div class="no-jobs">No scheduled messages</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -484,47 +852,41 @@
     <script>
         let allGroups = [];
         let selectedGroups = [];
+        let uploadedImage = null;
+        let currentSendMode = 'now';
 
         // Auto-load groups on page load
         window.addEventListener('load', async () => {
-            // Check if user is authenticated
             const userSession = sessionStorage.getItem('currentUserSession');
             if (!userSession) {
-                // Redirect to authentication page if not logged in
                 window.location.href = '/';
                 return;
             }
 
-            // Auto-load groups immediately
             await loadAllGroups();
             
-            // Show initial status
             setTimeout(() => {
                 const groupsStatus = document.getElementById('groupsStatus');
                 groupsStatus.className = 'status info';
                 groupsStatus.textContent = '💡 Groups loaded automatically! Select which ones to message this week.';
             }, 1000);
             
-            // Set default send mode
-            toggleSendMode();
+            setMinDate();
         });
 
         // Load all actual groups from the backend
         async function loadAllGroups() {
             const status = document.getElementById('groupsStatus');
-            const display = document.getElementById('groupsDisplay');
             
             status.className = 'status info';
             status.textContent = 'Loading your WhatsApp groups...';
             
             try {
-                // Get user session from storage
                 const userSession = JSON.parse(sessionStorage.getItem('currentUserSession'));
                 if (!userSession || !userSession.apiKey) {
                     throw new Error('User session not found. Please login again.');
                 }
 
-                // Fetch real groups from the backend using user's session
                 const response = await fetch('/api/groups', {
                     headers: {
                         'Authorization': `Bearer ${userSession.apiKey}`,
@@ -552,7 +914,6 @@
                 status.className = 'status error';
                 status.textContent = `❌ Error loading groups: ${error.message}`;
                 
-                // If session error, redirect to login
                 if (error.message.includes('session') || error.message.includes('login')) {
                     setTimeout(() => {
                         window.location.href = '/';
@@ -566,11 +927,9 @@
             const dropdownContainer = document.getElementById('dropdownContainer');
             const dropdownList = document.getElementById('dropdownList');
             
-            // Hide old display, show new dropdown
             display.style.display = 'none';
             dropdownContainer.style.display = 'block';
             
-            // Populate dropdown list
             dropdownList.innerHTML = '';
             groups.forEach(group => {
                 const groupDiv = document.createElement('div');
@@ -585,7 +944,6 @@
                 dropdownList.appendChild(groupDiv);
             });
             
-            // Update dropdown input text
             updateDropdownText();
         }
 
@@ -604,70 +962,32 @@
             updateSelectedTags();
             updateDropdownText();
             
-            // Clear the search input after selection
             document.getElementById('groupDropdown').value = '';
-            filterGroups(); // Reset the filtered list
+            filterGroups();
         }
 
-        // FIXED: Updated selectAllGroups function
         function selectAllGroups() {
-            selectedGroups = [...allGroups]; // Create a copy of all groups
+            selectedGroups = [...allGroups];
             
-            // Mark all dropdown items as selected
             document.querySelectorAll('#dropdownList .group-item').forEach(item => {
                 item.classList.add('selected');
             });
             
-            // Update all UI elements
             updateSelectionInfo();
             updateSelectedTags();
             updateDropdownText();
-            
-            console.log('All groups selected, count:', selectedGroups.length);
         }
 
-        // Helper Functions
-        function getSelectedGroups() {
-            return selectedGroups;
-        }
-
-        // FIXED: Updated clearSelection function
         function clearSelection() {
             selectedGroups = [];
             
-            // Update all UI elements for the new system
             updateSelectionInfo();
             updateSelectedTags();
             updateDropdownText();
             
-            // Remove 'selected' class from all dropdown items
             document.querySelectorAll('#dropdownList .group-item').forEach(item => {
                 item.classList.remove('selected');
             });
-            
-            console.log('Selection cleared, selectedGroups length:', selectedGroups.length);
-        }
-
-        // OLD FUNCTION - No longer used but keeping for compatibility
-        function updateSelectionDisplay() {
-            const display = document.getElementById('groupsDisplay');
-            if (selectedGroups.length === 0) {
-                display.innerHTML = '<div class="no-selection">No groups selected</div>';
-            } else {
-                const groupsHTML = selectedGroups.map(group => `
-                    <div class="selected-group">
-                        <span>${group.name}</span>
-                        <button onclick="removeGroup('${group.id}')" class="remove-btn">×</button>
-                    </div>
-                `).join('');
-                display.innerHTML = groupsHTML;
-            }
-        }
-
-        // OLD FUNCTION - No longer used but keeping for compatibility
-        function removeGroup(groupId) {
-            selectedGroups = selectedGroups.filter(g => g.id !== groupId);
-            updateSelectionDisplay();
         }
 
         function updateDropdownText() {
@@ -703,31 +1023,21 @@
             tagsContainer.style.display = 'flex';
         }
 
-        // FIXED: Updated removeGroupTag function
         function removeGroupTag(groupId) {
-            console.log('Removing group with ID:', groupId);
-            
-            // Find and remove from selectedGroups array
             const index = selectedGroups.findIndex(g => g.id === groupId);
             if (index !== -1) {
                 selectedGroups.splice(index, 1);
-                console.log('Group removed, remaining count:', selectedGroups.length);
                 
-                // Update dropdown list to remove 'selected' class
                 const dropdownItems = document.querySelectorAll('#dropdownList .group-item');
                 dropdownItems.forEach(item => {
-                    // Check if this item corresponds to the removed group by checking the group ID in innerHTML
                     if (item.innerHTML.includes(groupId)) {
                         item.classList.remove('selected');
                     }
                 });
                 
-                // Update all UI elements
                 updateSelectionInfo();
                 updateSelectedTags();
                 updateDropdownText();
-            } else {
-                console.error('Group not found in selectedGroups:', groupId);
             }
         }
 
@@ -742,12 +1052,10 @@
             } else {
                 dropdownList.style.display = 'block';
                 dropdownWrapper.classList.add('active');
-                // Focus on the input when opening dropdown
                 document.getElementById('groupDropdown').focus();
             }
         }
 
-        // Close dropdown when clicking outside
         document.addEventListener('click', function(event) {
             const dropdownContainer = document.getElementById('dropdownContainer');
             const dropdownList = document.getElementById('dropdownList');
@@ -757,9 +1065,8 @@
             if (dropdownContainer && !dropdownContainer.contains(event.target)) {
                 dropdownList.style.display = 'none';
                 dropdownWrapper.classList.remove('active');
-                // Clear the input when closing dropdown
                 dropdownInput.value = '';
-                filterGroups(); // Reset to show all groups
+                filterGroups();
             }
         });
 
@@ -777,34 +1084,29 @@
             const filter = document.getElementById('groupDropdown').value.toLowerCase();
             const dropdownList = document.getElementById('dropdownList');
             
-            // If dropdown is closed, don't filter
             if (dropdownList.style.display === 'none') {
                 return;
             }
             
             let filteredGroups;
             if (filter === '') {
-                // Show all groups when input is empty
                 filteredGroups = allGroups;
             } else {
-                // Filter groups based on input
                 filteredGroups = allGroups.filter(group => 
                     group.name.toLowerCase().includes(filter)
                 );
             }
             
-            // Update dropdown list with filtered groups
             dropdownList.innerHTML = '';
             
             if (filteredGroups.length === 0) {
-                // Show "no results" message
                 const noResultsDiv = document.createElement('div');
                 noResultsDiv.className = 'group-item';
                 noResultsDiv.style.textAlign = 'center';
                 noResultsDiv.style.color = '#666';
                 noResultsDiv.style.fontStyle = 'italic';
                 noResultsDiv.textContent = 'No groups found matching your search';
-                noResultsDiv.onclick = null; // No click action
+                noResultsDiv.onclick = null;
                 dropdownList.appendChild(noResultsDiv);
             } else {
                 filteredGroups.forEach(group => {
@@ -817,7 +1119,6 @@
                         <span class="group-id">${group.id}</span>
                     `;
                     
-                    // Restore selection state
                     if (selectedGroups.some(g => g.id === group.id)) {
                         groupDiv.classList.add('selected');
                     }
@@ -827,45 +1128,209 @@
             }
         }
 
+        // Text formatting functions
+        function formatText(format) {
+            const textarea = document.getElementById('messageComposer');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+            
+            if (selectedText) {
+                let formattedText = selectedText;
+                
+                switch (format) {
+                    case 'bold':
+                        formattedText = `*${selectedText}*`;
+                        break;
+                    case 'italic':
+                        formattedText = `_${selectedText}_`;
+                        break;
+                    case 'underline':
+                        formattedText = `~${selectedText}~`;
+                        break;
+                }
+                
+                textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+                textarea.focus();
+                textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
+                updateCharCount();
+            }
+        }
+
+        function insertEmoji(emoji) {
+            const textarea = document.getElementById('messageComposer');
+            const cursorPos = textarea.selectionStart;
+            const textBefore = textarea.value.substring(0, cursorPos);
+            const textAfter = textarea.value.substring(cursorPos);
+            
+            textarea.value = textBefore + emoji + textAfter;
+            textarea.focus();
+            textarea.setSelectionRange(cursorPos + emoji.length, cursorPos + emoji.length);
+            updateCharCount();
+        }
+
+        function handleKeyboardShortcuts(event) {
+            if (event.ctrlKey || event.metaKey) {
+                switch (event.key.toLowerCase()) {
+                    case 'b':
+                        event.preventDefault();
+                        formatText('bold');
+                        break;
+                    case 'i':
+                        event.preventDefault();
+                        formatText('italic');
+                        break;
+                    case 'u':
+                        event.preventDefault();
+                        formatText('underline');
+                        break;
+                }
+            }
+        }
+
         function updateCharCount() {
-            const messageInput = document.getElementById('messageInput');
+            const messageInput = document.getElementById('messageComposer');
             const charCount = document.getElementById('charCount');
             const count = messageInput.value.length;
-            charCount.textContent = `${count} / 4096 characters (WhatsApp limit)`;
+            charCount.textContent = `${count}/4096`;
             
-            // Change color based on length
-            if (count > 1000) {
-                charCount.style.color = '#dc3545'; // Red for long messages
-            } else if (count > 500) {
-                charCount.style.color = '#ffc107'; // Yellow for medium messages
-            } else {
-                charCount.style.color = '#666'; // Default gray
+            charCount.className = 'char-count';
+            if (count > 3500) {
+                charCount.classList.add('danger');
+            } else if (count > 2000) {
+                charCount.classList.add('warning');
             }
+        }
+
+        // Image upload functions
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('Please select a valid image file (JPEG, PNG, WEBP)');
+                return;
+            }
+            
+            // Validate file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image size must be less than 5MB');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/upload-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    uploadedImage = {
+                        url: result.imageUrl,
+                        filename: result.filename,
+                        size: result.size
+                    };
+                    
+                    showImagePreview(result.imageUrl, file.name, result.size);
+                } else {
+                    throw new Error(result.error || 'Failed to upload image');
+                }
+                
+            } catch (error) {
+                console.error('Image upload error:', error);
+                alert('Failed to upload image: ' + error.message);
+            }
+            
+            // Clear the input
+            event.target.value = '';
+        }
+
+        function showImagePreview(imageUrl, fileName, fileSize) {
+            const previewContainer = document.getElementById('imagePreviewContainer');
+            const imagePreview = document.getElementById('imagePreview');
+            const imageInfo = document.getElementById('imageInfo');
+            
+            imagePreview.src = imageUrl;
+            imageInfo.textContent = `${fileName} (${formatFileSize(fileSize)})`;
+            previewContainer.style.display = 'block';
+        }
+
+        function removeImage() {
+            uploadedImage = null;
+            document.getElementById('imagePreviewContainer').style.display = 'none';
+            document.getElementById('imagePreview').src = '';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return Math.round(bytes / 1024) + ' KB';
+            return Math.round(bytes / 1048576) + ' MB';
+        }
+
+        // Send mode functions
+        function setSendMode(mode) {
+            currentSendMode = mode;
+            
+            // Update toggle buttons
+            document.querySelectorAll('.mode-option').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Show/hide mode content
+            const sendNowMode = document.getElementById('sendNowMode');
+            const scheduleMode = document.getElementById('scheduleMode');
+            
+            if (mode === 'now') {
+                sendNowMode.style.display = 'block';
+                scheduleMode.style.display = 'none';
+            } else {
+                sendNowMode.style.display = 'none';
+                scheduleMode.style.display = 'block';
+            }
+        }
+
+        function setMinDate() {
+            const today = new Date();
+            const dateInput = document.getElementById('scheduleDate');
+            dateInput.min = today.toISOString().split('T')[0];
+            
+            const timeInput = document.getElementById('scheduleTime');
+            const currentHour = today.getHours();
+            const currentMinute = today.getMinutes();
+            const nextHour = currentHour + 1;
+            timeInput.value = `${nextHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
         }
 
         // Send messages function
         document.getElementById("messageForm").addEventListener("submit", async function (e) {
             e.preventDefault();
             
-            const message = document.getElementById("messageInput").value;
+            const message = document.getElementById("messageComposer").value;
             const status = document.getElementById("sendStatus");
             const submitBtn = e.target.querySelector('button[type="submit"]');
             
-            // Validate that groups are selected
             if (selectedGroups.length === 0) {
                 status.className = 'status error';
                 status.textContent = '❌ Please select at least one WhatsApp group first!';
                 return;
             }
             
-            // Validate that message is provided
             if (!message || message.trim() === '') {
-                status.className = 'status error';
-                status.textContent = '❌ Please enter a message to send!';
-                return;
+                if (!uploadedImage) {
+                    status.className = 'status error';
+                    status.textContent = '❌ Please enter a message or upload an image!';
+                    return;
+                }
             }
             
-            // Validate message length (WhatsApp limit is 4096 characters)
             if (message.length > 4096) {
                 status.className = 'status error';
                 status.textContent = '❌ Message is too long! WhatsApp supports maximum 4096 characters.';
@@ -878,10 +1343,20 @@
             status.textContent = `Sending message to ${selectedGroups.length} selected groups...`;
 
             try {
-                // Get user session from storage
                 const userSession = JSON.parse(sessionStorage.getItem('currentUserSession'));
                 if (!userSession || !userSession.apiKey) {
                     throw new Error('User session not found. Please login again.');
+                }
+
+                const requestBody = { 
+                    message: message,
+                    selectedGroups: selectedGroups
+                };
+
+                // Add image data if present
+                if (uploadedImage) {
+                    requestBody.imageUrl = uploadedImage.url;
+                    requestBody.hasImage = true;
                 }
 
                 const response = await fetch("/send-messages", {
@@ -890,10 +1365,7 @@
                         "Content-Type": "application/json",
                         "Authorization": `Bearer ${userSession.apiKey}`
                     },
-                    body: JSON.stringify({ 
-                        message: message,
-                        selectedGroups: selectedGroups
-                    })
+                    body: JSON.stringify(requestBody)
                 });
 
                 const result = await response.json();
@@ -901,6 +1373,11 @@
                 if (result.success) {
                     status.className = 'status success';
                     status.textContent = result.message;
+                    
+                    // Clear the form on success
+                    document.getElementById("messageComposer").value = '';
+                    removeImage();
+                    updateCharCount();
                 } else {
                     status.className = 'status error';
                     status.textContent = result.message;
@@ -911,99 +1388,20 @@
             }
             
             submitBtn.disabled = false;
-            submitBtn.textContent = '🚀 Send Messages to Selected Groups';
+            submitBtn.textContent = '🚀 Send Message';
         });
 
-        // Logout function
-        async function logoutUser() {
-            try {
-                console.log('🚪 User clicked logout - deleting all sessions...');
-                
-                // Show loading state
-                const logoutBtn = document.getElementById('logoutBtn');
-                const originalText = logoutBtn.textContent;
-                logoutBtn.textContent = '🔄 Logging out...';
-                logoutBtn.disabled = true;
-                
-                // Call the logout endpoint to delete all sessions
-                const response = await fetch('/api/logout-all-sessions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    console.log('✅ Logout successful:', result.message);
-                    
-                    // Clear session storage
-                    sessionStorage.removeItem('currentUserSession');
-                    
-                    // Redirect to authentication page
-                    window.location.href = '/';
-                } else {
-                    console.error('❌ Logout failed:', result.message);
-                    alert('Logout failed: ' + result.message);
-                }
-                
-            } catch (error) {
-                console.error('❌ Logout error:', error);
-                alert('Logout error: ' + error.message);
-            } finally {
-                // Reset button state
-                const logoutBtn = document.getElementById('logoutBtn');
-                logoutBtn.textContent = 'Logout';
-                logoutBtn.disabled = false;
-            }
-        }
-
-        // Send Mode Toggle Functions
-        function toggleSendMode() {
-            const sendModeToggle = document.getElementById('sendModeToggle');
-            const sendNowMode = document.getElementById('sendNowMode');
-            const scheduleMode = document.getElementById('scheduleMode');
-            
-            if (sendModeToggle.checked) {
-                // Schedule Mode
-                sendNowMode.style.display = 'none';
-                scheduleMode.style.display = 'block';
-                setMinDate();
-            } else {
-                // Send Now Mode
-                sendNowMode.style.display = 'block';
-                scheduleMode.style.display = 'none';
-            }
-        }
-
-        function setMinDate() {
-            const today = new Date();
-            
-            const dateInput = document.getElementById('scheduleDate');
-            dateInput.min = today.toISOString().split('T')[0];
-            
-            // Set default time to current time + 1 hour
-            const timeInput = document.getElementById('scheduleTime');
-            const currentHour = today.getHours();
-            const currentMinute = today.getMinutes();
-            const nextHour = currentHour + 1;
-            timeInput.value = `${nextHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
-        }
-
         async function scheduleMessage() {
-            const scheduleBtn = document.getElementById('scheduleBtn');
+            const scheduleBtn = event.target;
             const originalText = scheduleBtn.textContent;
             
             try {
-                // Validate inputs
-                const message = document.getElementById('messageInput').value.trim();
-                const selectedGroups = getSelectedGroups();
+                const message = document.getElementById('messageComposer').value.trim();
                 const scheduleDate = document.getElementById('scheduleDate').value;
                 const scheduleTime = document.getElementById('scheduleTime').value;
                 
-                if (!message) {
-                    alert('Please enter a message to schedule');
+                if (!message && !uploadedImage) {
+                    alert('Please enter a message or upload an image to schedule');
                     return;
                 }
                 
@@ -1017,18 +1415,14 @@
                     return;
                 }
                 
-                // Show loading state
                 scheduleBtn.textContent = '🔄 Scheduling...';
                 scheduleBtn.disabled = true;
                 
-                // Build UTC ISO from IST (UTC+05:30)
                 const [year, month, day] = scheduleDate.split('-').map(Number);
                 const [hours, minutes] = scheduleTime.split(':').map(Number);
                 
-                // Convert IST to UTC (IST = UTC+05:30)
                 const utcMs = Date.UTC(year, month - 1, day, hours - 5, minutes - 30, 0);
                 
-                // Check if scheduled time is at least 1 minute in the future
                 if (utcMs < Date.now() + 60000) {
                     alert('Please choose a time at least 1 minute in the future');
                     return;
@@ -1036,13 +1430,22 @@
                 
                 const isoUtc = new Date(utcMs).toISOString();
                 
-                // Get user session
                 const userSession = JSON.parse(sessionStorage.getItem('currentUserSession'));
                 if (!userSession || !userSession.apiKey) {
                     throw new Error('User session not found. Please login again.');
                 }
                 
-                // Schedule the message
+                const requestBody = {
+                    groupIds: selectedGroups.map(g => g.id),
+                    message: message,
+                    scheduledAt: isoUtc
+                };
+
+                if (uploadedImage) {
+                    requestBody.imageUrl = uploadedImage.url;
+                    requestBody.hasImage = true;
+                }
+                
                 const response = await fetch('/api/schedule', {
                     method: 'POST',
                     headers: {
@@ -1050,17 +1453,12 @@
                         'Authorization': `Bearer ${userSession.apiKey}`,
                         'X-User-Phone': userSession.phoneNumber
                     },
-                    body: JSON.stringify({
-                        groupIds: selectedGroups.map(g => g.id),
-                        message: message,
-                        scheduledAt: isoUtc
-                    })
+                    body: JSON.stringify(requestBody)
                 });
                 
                 const result = await response.json();
                 
                 if (result.success) {
-                    // Format IST time for display
                     const humanIST = new Intl.DateTimeFormat('en-IN', { 
                         dateStyle: 'medium', 
                         timeStyle: 'short', 
@@ -1069,15 +1467,12 @@
                     
                     alert(`✅ Message scheduled successfully for ${humanIST} IST to ${selectedGroups.length} groups`);
                     
-                    // Clear form
-                    document.getElementById('messageInput').value = '';
+                    document.getElementById('messageComposer').value = '';
+                    removeImage();
                     clearSelection();
+                    updateCharCount();
                     
-                    // Reset to Send Now mode
-                    document.getElementById('sendModeToggle').checked = false;
-                    toggleSendMode();
-                    
-                    // Refresh scheduled jobs list
+                    setSendMode('now');
                     loadScheduledJobs();
                     
                 } else {
@@ -1088,8 +1483,7 @@
                 console.error('Error scheduling message:', error);
                 alert('❌ Error scheduling message: ' + error.message);
             } finally {
-                // Reset button state
-                scheduleBtn.textContent = '📅 Schedule Message';
+                scheduleBtn.textContent = originalText;
                 scheduleBtn.disabled = false;
             }
         }
@@ -1098,7 +1492,6 @@
             const jobsList = document.getElementById('scheduledJobsList');
             
             try {
-                // Get user session
                 const userSession = JSON.parse(sessionStorage.getItem('currentUserSession'));
                 if (!userSession || !userSession.apiKey) {
                     throw new Error('User session not found. Please login again.');
@@ -1150,6 +1543,7 @@
                             <div class="job-time">📅 ${humanIST} IST</div>
                             <div class="job-groups">📱 ${job.groupIds.length} group(s)</div>
                             <div class="job-message">💬 ${messagePreview}</div>
+                            ${job.hasImage ? '<div class="job-message">📷 With image</div>' : ''}
                         </div>
                         <button class="cancel-btn" onclick="cancelJob('${job.id}')">
                             ❌ Cancel
@@ -1167,7 +1561,6 @@
             }
             
             try {
-                // Get user session
                 const userSession = JSON.parse(sessionStorage.getItem('currentUserSession'));
                 if (!userSession || !userSession.apiKey) {
                     throw new Error('User session not found. Please login again.');
@@ -1185,7 +1578,7 @@
                 
                 if (result.success) {
                     alert('✅ Scheduled message cancelled successfully');
-                    loadScheduledJobs(); // Refresh the list
+                    loadScheduledJobs();
                 } else {
                     throw new Error(result.message || 'Failed to cancel job');
                 }
@@ -1193,6 +1586,43 @@
             } catch (error) {
                 console.error('Error cancelling job:', error);
                 alert('❌ Error cancelling job: ' + error.message);
+            }
+        }
+
+        async function logoutUser() {
+            try {
+                console.log('🚪 User clicked logout - deleting all sessions...');
+                
+                const logoutBtn = document.getElementById('logoutBtn');
+                const originalText = logoutBtn.textContent;
+                logoutBtn.textContent = '🔄 Logging out...';
+                logoutBtn.disabled = true;
+                
+                const response = await fetch('/api/logout-all-sessions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log('✅ Logout successful:', result.message);
+                    sessionStorage.removeItem('currentUserSession');
+                    window.location.href = '/';
+                } else {
+                    console.error('❌ Logout failed:', result.message);
+                    alert('Logout failed: ' + result.message);
+                }
+                
+            } catch (error) {
+                console.error('❌ Logout error:', error);
+                alert('Logout error: ' + error.message);
+            } finally {
+                const logoutBtn = document.getElementById('logoutBtn');
+                logoutBtn.textContent = 'Logout';
+                logoutBtn.disabled = false;
             }
         }
     </script>
