@@ -167,10 +167,10 @@ class WasenderService {
         }
     }
 
-    // Send message to a group - FIXED error handling
+    // Send text message to a group - FIXED error handling
     async sendMessageToGroup(groupId, message) {
         try {
-            console.log(`📤 Attempting to send real message to ${groupId}`);
+            console.log(`📤 Attempting to send text message to ${groupId}`);
             
             try {
                 const payload = {
@@ -182,17 +182,18 @@ class WasenderService {
                 
                 // FIXED: Handle different success response structures
                 if (response.data && (response.data.success !== false)) {
-                    console.log(`✅ Message sent successfully to ${groupId}`);
+                    console.log(`✅ Text message sent successfully to ${groupId}`);
                     return {
                         success: true,
                         messageId: response.data.messageId || response.data.data?.messageId,
-                        status: response.data.status || response.data.data?.status || 'sent'
+                        status: response.data.status || response.data.data?.status || 'sent',
+                        type: 'text'
                     };
                 } else {
                     throw new Error(response.data.message || response.data.error || 'Failed to send message');
                 }
             } catch (apiError) {
-                console.log(`⚠️ Failed to send real message: ${apiError.message}`);
+                console.log(`⚠️ Failed to send real text message: ${apiError.message}`);
                 
                 // Log detailed error for debugging
                 if (apiError.response) {
@@ -202,11 +203,12 @@ class WasenderService {
                 
                 // Only simulate success if we're completely unconfigured
                 if (!this.isConfigured()) {
-                    console.log('📱 Simulating success in demo mode');
+                    console.log('📱 Simulating text message success in demo mode');
                     return {
                         success: true,
-                        messageId: `demo_${Date.now()}`,
-                        status: 'sent'
+                        messageId: `demo_text_${Date.now()}`,
+                        status: 'sent',
+                        type: 'text'
                     };
                 }
                 
@@ -215,27 +217,162 @@ class WasenderService {
             }
         
         } catch (error) {
-            console.error(`❌ Error sending message to ${groupId}:`, error.message);
+            console.error(`❌ Error sending text message to ${groupId}:`, error.message);
             return {
                 success: false,
-                error: error.message
+                error: error.message,
+                type: 'text'
             };
         }
     }
 
-    // Send messages to multiple groups with delay
-    async sendMessagesToGroups(groups, message, delayMs = 60000) {
+    // NEW: Send image with caption to a group
+    async sendImageToGroup(groupId, caption, imageUrl) {
+        try {
+            console.log(`📤 Attempting to send image to ${groupId}`);
+            console.log(`📷 Image URL: ${imageUrl}`);
+            console.log(`📝 Caption: ${caption || '[No caption]'}`);
+            
+            try {
+                const payload = {
+                    to: groupId,
+                    text: caption || '', // Caption for the image
+                    imageUrl: imageUrl
+                };
+
+                console.log('📡 Sending image payload:', payload);
+                const response = await this.axiosInstance.post(`/api/send-message`, payload);
+                
+                // Handle different success response structures
+                if (response.data && (response.data.success !== false)) {
+                    console.log(`✅ Image sent successfully to ${groupId}`);
+                    return {
+                        success: true,
+                        messageId: response.data.messageId || response.data.data?.messageId,
+                        status: response.data.status || response.data.data?.status || 'sent',
+                        type: 'image'
+                    };
+                } else {
+                    throw new Error(response.data.message || response.data.error || 'Failed to send image');
+                }
+            } catch (apiError) {
+                console.log(`⚠️ Failed to send real image: ${apiError.message}`);
+                
+                // Log detailed error for debugging
+                if (apiError.response) {
+                    console.error('📡 Error Response Status:', apiError.response.status);
+                    console.error('📡 Error Response Data:', apiError.response.data);
+                }
+                
+                // Only simulate success if we're completely unconfigured
+                if (!this.isConfigured()) {
+                    console.log('📱 Simulating image success in demo mode');
+                    return {
+                        success: true,
+                        messageId: `demo_image_${Date.now()}`,
+                        status: 'sent',
+                        type: 'image'
+                    };
+                }
+                
+                // Re-throw the error if we're configured but API failed
+                throw apiError;
+            }
+        
+        } catch (error) {
+            console.error(`❌ Error sending image to ${groupId}:`, error.message);
+            return {
+                success: false,
+                error: error.message,
+                type: 'image'
+            };
+        }
+    }
+
+    // NEW: Send mixed message (text + image) to a group
+    async sendMixedMessageToGroup(groupId, message, imageUrl) {
+        try {
+            console.log(`📤 Attempting to send mixed message to ${groupId}`);
+            console.log(`📝 Message: ${message}`);
+            console.log(`📷 Image URL: ${imageUrl}`);
+            
+            try {
+                const payload = {
+                    to: groupId,
+                    text: message,
+                    imageUrl: imageUrl
+                };
+
+                const response = await this.axiosInstance.post(`/api/send-message`, payload);
+                
+                if (response.data && (response.data.success !== false)) {
+                    console.log(`✅ Mixed message sent successfully to ${groupId}`);
+                    return {
+                        success: true,
+                        messageId: response.data.messageId || response.data.data?.messageId,
+                        status: response.data.status || response.data.data?.status || 'sent',
+                        type: 'mixed'
+                    };
+                } else {
+                    throw new Error(response.data.message || response.data.error || 'Failed to send mixed message');
+                }
+            } catch (apiError) {
+                console.log(`⚠️ Failed to send real mixed message: ${apiError.message}`);
+                
+                if (apiError.response) {
+                    console.error('📡 Error Response Status:', apiError.response.status);
+                    console.error('📡 Error Response Data:', apiError.response.data);
+                }
+                
+                if (!this.isConfigured()) {
+                    console.log('📱 Simulating mixed message success in demo mode');
+                    return {
+                        success: true,
+                        messageId: `demo_mixed_${Date.now()}`,
+                        status: 'sent',
+                        type: 'mixed'
+                    };
+                }
+                
+                throw apiError;
+            }
+        
+        } catch (error) {
+            console.error(`❌ Error sending mixed message to ${groupId}:`, error.message);
+            return {
+                success: false,
+                error: error.message,
+                type: 'mixed'
+            };
+        }
+    }
+
+    // Enhanced: Send messages to multiple groups with delay and image support
+    async sendMessagesToGroups(groups, message, delayMs = 60000, imageUrl = null) {
         const results = [];
         let successCount = 0;
         
         console.log(`🚀 Starting to send messages to ${groups.length} groups...`);
+        console.log(`📝 Message: ${message || '[No text]'}`);
+        console.log(`🖼️ Image: ${imageUrl ? 'Yes' : 'No'}`);
         
         for (let i = 0; i < groups.length; i++) {
             const group = groups[i];
             console.log(`📤 Sending to: ${group.name} (${i + 1}/${groups.length})`);
             
             try {
-                const result = await this.sendMessageToGroup(group.id, message);
+                let result;
+                
+                if (imageUrl && message && message.trim()) {
+                    // Both text and image - send as mixed message
+                    result = await this.sendMixedMessageToGroup(group.id, message, imageUrl);
+                } else if (imageUrl) {
+                    // Image only (with optional caption)
+                    result = await this.sendImageToGroup(group.id, message || '', imageUrl);
+                } else {
+                    // Text only
+                    result = await this.sendMessageToGroup(group.id, message);
+                }
                 
                 if (result.success) {
                     console.log(`✅ Sent to: ${group.name}`);
@@ -244,7 +381,8 @@ class WasenderService {
                         group: group.name,
                         groupId: group.id,
                         success: true,
-                        messageId: result.messageId
+                        messageId: result.messageId,
+                        type: result.type || 'text'
                     });
                 } else {
                     console.log(`❌ Failed: ${group.name} - ${result.error}`);
@@ -252,7 +390,8 @@ class WasenderService {
                         group: group.name,
                         groupId: group.id,
                         success: false,
-                        error: result.error
+                        error: result.error,
+                        type: result.type || 'text'
                     });
                 }
                 
@@ -268,12 +407,78 @@ class WasenderService {
                     group: group.name,
                     groupId: group.id,
                     success: false,
-                    error: error.message
+                    error: error.message,
+                    type: 'error'
                 });
             }
         }
         
         console.log(`\n📊 Results: ${successCount}/${groups.length} messages sent successfully!`);
+        
+        return {
+            totalGroups: groups.length,
+            successCount: successCount,
+            failedCount: groups.length - successCount,
+            results: results
+        };
+    }
+
+    // NEW: Send images to multiple groups with delay
+    async sendImagesToGroups(groups, caption, imageUrl, delayMs = 60000) {
+        const results = [];
+        let successCount = 0;
+        
+        console.log(`🚀 Starting to send images to ${groups.length} groups...`);
+        console.log(`📝 Caption: ${caption || '[No caption]'}`);
+        console.log(`🖼️ Image URL: ${imageUrl}`);
+        
+        for (let i = 0; i < groups.length; i++) {
+            const group = groups[i];
+            console.log(`📤 Sending image to: ${group.name} (${i + 1}/${groups.length})`);
+            
+            try {
+                const result = await this.sendImageToGroup(group.id, caption, imageUrl);
+                
+                if (result.success) {
+                    console.log(`✅ Image sent to: ${group.name}`);
+                    successCount++;
+                    results.push({
+                        group: group.name,
+                        groupId: group.id,
+                        success: true,
+                        messageId: result.messageId,
+                        type: 'image'
+                    });
+                } else {
+                    console.log(`❌ Failed: ${group.name} - ${result.error}`);
+                    results.push({
+                        group: group.name,
+                        groupId: group.id,
+                        success: false,
+                        error: result.error,
+                        type: 'image'
+                    });
+                }
+                
+                // Add delay between messages to avoid rate limiting
+                if (i < groups.length - 1) {
+                    console.log(`⏳ Waiting ${delayMs}ms before next image...`);
+                    await new Promise(resolve => setTimeout(resolve, delayMs));
+                }
+                
+            } catch (error) {
+                console.log(`❌ Error: ${group.name} - ${error.message}`);
+                results.push({
+                    group: group.name,
+                    groupId: group.id,
+                    success: false,
+                    error: error.message,
+                    type: 'image'
+                });
+            }
+        }
+        
+        console.log(`\n📊 Results: ${successCount}/${groups.length} images sent successfully!`);
         
         return {
             totalGroups: groups.length,
