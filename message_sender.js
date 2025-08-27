@@ -1,7 +1,75 @@
 const WasenderService = require('./wasender_service');
+const AuthService = require('./auth_service');
 const fetch = require('node-fetch');
 
-const wasenderService = new WasenderService();
+// Initialize auth service to get dynamic session details
+const authService = new AuthService();
+
+// Function to get current active session details
+async function getCurrentActiveSession() {
+    try {
+        const sessionsResult = await authService.getAllSessions();
+        
+        if (sessionsResult.success && sessionsResult.sessions && sessionsResult.sessions.length > 0) {
+            // Find a connected session first, fallback to any session
+            const connectedSession = sessionsResult.sessions.find(s => s.status === 'connected');
+            const activeSession = connectedSession || sessionsResult.sessions[0];
+            
+            console.log(`🔍 Using session: ${activeSession.phone_number} (${activeSession.status})`);
+            return {
+                success: true,
+                session: activeSession,
+                apiKey: activeSession.api_key,
+                sessionId: activeSession.id,
+                connected: activeSession.status === 'connected'
+            };
+        } else {
+            return {
+                success: false,
+                error: 'No active WhatsApp session found'
+            };
+        }
+    } catch (error) {
+        console.error('❌ Error getting current session:', error.message);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+// Function to wait for session connection
+async function waitForSessionConnection(apiKey, maxAttempts = 10, delayMs = 3000) {
+    console.log('⏳ Waiting for WhatsApp session to fully connect...');
+    
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+            const wasenderService = new WasenderService(apiKey);
+            const statusResult = await wasenderService.checkDeviceStatus();
+            
+            console.log(`📊 Connection attempt ${attempt}/${maxAttempts}: ${statusResult.data?.status || 'unknown'}`);
+            
+            if (statusResult.connected) {
+                console.log('✅ WhatsApp session is fully connected!');
+                return { success: true, connected: true };
+            }
+            
+            if (attempt < maxAttempts) {
+                console.log(`⏳ Waiting ${delayMs}ms before next check...`);
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+            }
+            
+        } catch (error) {
+            console.error(`❌ Connection check attempt ${attempt} failed:`, error.message);
+        }
+    }
+    
+    return { 
+        success: false, 
+        connected: false, 
+        error: 'WhatsApp session connection timeout' 
+    };
+}
 
 async function sendMessagesFromSheet(sheetUrl) {
     try {
@@ -56,10 +124,10 @@ async function sendMessagesFromSheet(sheetUrl) {
             throw new Error('No groups found in sheet. Make sure to include group data starting from row 2.');
         }
         
-        // Check if WasenderApi is configured
-        if (!process.env.WASENDER_API_KEY || !process.env.WASENDER_DEVICE_ID) {
-            console.log('⚠️ WasenderApi not configured - running in demo mode');
-            console.log('✅ In production, messages would be sent to:', groups.map(g => g.name).join(', '));
+        // Get current active session dynamically
+        const sessionResult = await getCurrentActiveSession();
+        if (!sessionResult.success) {
+            console.log('⚠️ No active session - running in demo mode');
             return {
                 success: true,
                 demo: true,
@@ -69,11 +137,16 @@ async function sendMessagesFromSheet(sheetUrl) {
             };
         }
         
-        // Check device status
-        const deviceStatus = await wasenderService.checkDeviceStatus();
-        if (!deviceStatus.connected) {
-            throw new Error('WhatsApp device not connected. Please scan QR code first or check device status.');
+        // Wait for session to be fully connected
+        if (!sessionResult.connected) {
+            const connectionResult = await waitForSessionConnection(sessionResult.apiKey);
+            if (!connectionResult.connected) {
+                throw new Error('WhatsApp session not connected. Please scan QR code and wait for connection.');
+            }
         }
+        
+        // Use current session's API key
+        const wasenderService = new WasenderService(sessionResult.apiKey);
         
         // Send messages using WasenderApi
         const sendResults = await wasenderService.sendMessagesToGroups(groups, message);
@@ -94,57 +167,50 @@ async function sendMessagesFromSheet(sheetUrl) {
     }
 }
 
-// Function to get groups from WasenderApi
+// Function to get groups from WasenderApi with dynamic session management
 async function getWhatsAppGroups(req) {
     try {
         // Check if request has authorization header (multi-user mode)
         const authHeader = req.headers.authorization;
         if (authHeader && authHeader.startsWith('Bearer ')) {
             const userApiKey = authHeader.substring(7);
+            console.log('🔐 Using provided user API key for groups');
             
-            // In fallback mode, we need to distinguish between users
-            // For now, let's check if this is the primary user
-            const primaryPhoneNumber = process.env.PRIMARY_PHONE_NUMBER || '+918523862893';
+            // First check if session is connected
+            const wasenderService = new WasenderService(userApiKey);
+            const statusCheck = await wasenderService.checkDeviceStatus();
             
-            // Extract phone number from session storage (this is a workaround)
-            // In a real multi-user system, this would come from the database
-            let userPhoneNumber = null;
-            
-            // Try to get user info from the request context
-            if (req.headers['x-user-phone']) {
-                userPhoneNumber = req.headers['x-user-phone'];
-            }
-            
-            if (userPhoneNumber === primaryPhoneNumber) {
-                // Primary user - get real groups
-                console.log('🔐 Primary user - Getting real WhatsApp groups');
-                const userWasenderService = new WasenderService(userApiKey);
-                const result = await userWasenderService.getWhatsAppGroups();
+            if (!statusCheck.connected) {
+                console.log('⏳ Session not connected yet, waiting...');
+                // Wait for connection before fetching groups
+                const connectionResult = await waitForSessionConnection(userApiKey, 5, 2000);
                 
-                return {
-                    success: result.success,
-                    demo: false,
-                    groups: result.groups || [],
-                    error: result.error
-                };
-            } else {
-                // New user - return demo groups or empty list
-                console.log('🆕 New user - Returning demo groups');
-                return {
-                    success: true,
-                    demo: true,
-                    groups: [
-                        { name: "Demo Group 1", id: "demo_1@g.us", participants: 5 },
-                        { name: "Demo Group 2", id: "demo_2@g.us", participants: 8 },
-                        { name: "Demo Group 3", id: "demo_3@g.us", participants: 12 }
-                    ]
-                };
+                if (!connectionResult.connected) {
+                    return {
+                        success: true,
+                        demo: false,
+                        groups: [],
+                        error: 'WhatsApp session not connected yet. Please scan QR code and wait a moment.',
+                        needsConnection: true
+                    };
+                }
             }
+            
+            // Session is connected, fetch groups
+            const result = await wasenderService.getWhatsAppGroups();
+            
+            return {
+                success: result.success,
+                demo: false,
+                groups: result.groups || [],
+                error: result.error
+            };
         }
         
-        // Fallback to original method (single user mode)
-        if (!process.env.WASENDER_API_KEY || !process.env.WASENDER_DEVICE_ID) {
-            // Return demo groups if API not configured
+        // Fallback: Get current active session dynamically
+        const sessionResult = await getCurrentActiveSession();
+        if (!sessionResult.success) {
+            // Return demo groups if no active session
             return {
                 success: true,
                 demo: true,
@@ -157,7 +223,26 @@ async function getWhatsAppGroups(req) {
             };
         }
         
+        // Check connection status
+        if (!sessionResult.connected) {
+            console.log('⏳ Waiting for session connection...');
+            const connectionResult = await waitForSessionConnection(sessionResult.apiKey, 5, 2000);
+            
+            if (!connectionResult.connected) {
+                return {
+                    success: true,
+                    demo: false,
+                    groups: [],
+                    error: 'WhatsApp session not connected yet. Please scan QR code and wait a moment.',
+                    needsConnection: true
+                };
+            }
+        }
+        
+        // Use current session's API key
+        const wasenderService = new WasenderService(sessionResult.apiKey);
         const result = await wasenderService.getWhatsAppGroups();
+        
         return {
             success: result.success,
             demo: false,
@@ -175,16 +260,21 @@ async function getWhatsAppGroups(req) {
     }
 }
 
-// Function to get device status and QR code
+// Function to get device status and QR code with dynamic session management
 async function getDeviceInfo() {
     try {
-        if (!process.env.WASENDER_API_KEY || !process.env.WASENDER_DEVICE_ID) {
+        // Get current active session
+        const sessionResult = await getCurrentActiveSession();
+        if (!sessionResult.success) {
             return {
                 success: false,
-                error: 'WasenderApi not configured',
+                error: 'No active WhatsApp session found',
                 configured: false
             };
         }
+        
+        // Use current session's API key  
+        const wasenderService = new WasenderService(sessionResult.apiKey);
         
         const [deviceStatus, qrResult] = await Promise.all([
             wasenderService.checkDeviceStatus(),
@@ -198,7 +288,8 @@ async function getDeviceInfo() {
             deviceStatus: deviceStatus.data,
             qrCode: qrResult.success ? qrResult.qrCode : null,
             qrImage: qrResult.success ? qrResult.qrImage : null,
-            error: !deviceStatus.success ? deviceStatus.error : null
+            error: !deviceStatus.success ? deviceStatus.error : null,
+            session: sessionResult.session
         };
         
     } catch (error) {
@@ -215,5 +306,6 @@ module.exports = {
     sendMessagesFromSheet, 
     getWhatsAppGroups, 
     getDeviceInfo,
-    wasenderService 
+    getCurrentActiveSession,
+    waitForSessionConnection
 };

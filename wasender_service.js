@@ -3,7 +3,8 @@ require('dotenv').config();
 
 class WasenderService {
     constructor(apiKey = null, deviceId = null) {
-        this.apiUrl = process.env.WASENDER_API_URL || 'https://wasenderapi.com';
+        // FIXED: Add www prefix to match documentation
+        this.apiUrl = process.env.WASENDER_API_URL || 'https://www.wasenderapi.com';
         
         // Support both single-user and multi-user modes
         if (apiKey) {
@@ -80,10 +81,9 @@ class WasenderService {
         }
     }
 
-    // Get WhatsApp groups
+    // Get WhatsApp groups - FIXED response structure
     async getWhatsAppGroups() {
         try {
-            // Always try to get real groups first, even in fallback mode
             console.log('🔍 Attempting to fetch real WhatsApp groups...');
             
             try {
@@ -95,17 +95,32 @@ class WasenderService {
                 console.log(`📡 API Response Status: ${response.status}`);
                 console.log(`📡 API Response Data:`, JSON.stringify(response.data, null, 2));
                 
-                if (response.data && response.data.data) {
-                    const groups = response.data.data.map(group => ({
-                        name: group.name || group.subject,
-                        id: group.id,
-                        participants: group.participants?.length || 0
+                // FIXED: Handle both possible response structures
+                if (response.data) {
+                    let groups = [];
+                    
+                    // Check if response has success flag and data property
+                    if (response.data.success && response.data.data) {
+                        groups = response.data.data;
+                    } else if (Array.isArray(response.data)) {
+                        // Direct array response
+                        groups = response.data;
+                    } else if (response.data.groups) {
+                        // Alternative structure
+                        groups = response.data.groups;
+                    }
+                    
+                    // FIXED: Use correct property names for groups
+                    const processedGroups = groups.map(group => ({
+                        name: group.subject || group.name || 'Unknown Group', // Groups use 'subject'
+                        id: group.id || group.groupId,
+                        participants: group.participants_count || group.participantCount || group.participants?.length || 0
                     }));
                     
-                    console.log(`📋 Retrieved ${groups.length} WhatsApp groups from WasenderApi`);
+                    console.log(`📋 Retrieved ${processedGroups.length} WhatsApp groups from WasenderApi`);
                     return {
                         success: true,
-                        groups: groups
+                        groups: processedGroups
                     };
                 } else {
                     console.log('⚠️ API response missing data structure');
@@ -152,10 +167,9 @@ class WasenderService {
         }
     }
 
-    // Send message to a group
+    // Send message to a group - FIXED error handling
     async sendMessageToGroup(groupId, message) {
         try {
-            // Always try to send real message first
             console.log(`📤 Attempting to send real message to ${groupId}`);
             
             try {
@@ -166,18 +180,25 @@ class WasenderService {
 
                 const response = await this.axiosInstance.post(`/api/send-message`, payload);
                 
-                if (response.data.success) {
+                // FIXED: Handle different success response structures
+                if (response.data && (response.data.success !== false)) {
                     console.log(`✅ Message sent successfully to ${groupId}`);
                     return {
                         success: true,
-                        messageId: response.data.messageId,
-                        status: response.data.status
+                        messageId: response.data.messageId || response.data.data?.messageId,
+                        status: response.data.status || response.data.data?.status || 'sent'
                     };
                 } else {
-                    throw new Error(response.data.message || 'Failed to send message');
+                    throw new Error(response.data.message || response.data.error || 'Failed to send message');
                 }
             } catch (apiError) {
                 console.log(`⚠️ Failed to send real message: ${apiError.message}`);
+                
+                // Log detailed error for debugging
+                if (apiError.response) {
+                    console.error('📡 Error Response Status:', apiError.response.status);
+                    console.error('📡 Error Response Data:', apiError.response.data);
+                }
                 
                 // Only simulate success if we're completely unconfigured
                 if (!this.isConfigured()) {
@@ -189,17 +210,17 @@ class WasenderService {
                     };
                 }
                 
-                            // Re-throw the error if we're configured but API failed
-            throw apiError;
-        }
+                // Re-throw the error if we're configured but API failed
+                throw apiError;
+            }
         
-    } catch (error) {
-        console.error(`❌ Error sending message to ${groupId}:`, error.message);
-        return {
-            success: false,
-            error: error.message
-        };
-    }
+        } catch (error) {
+            console.error(`❌ Error sending message to ${groupId}:`, error.message);
+            return {
+                success: false,
+                error: error.message
+            };
+        }
     }
 
     // Send messages to multiple groups with delay
@@ -262,7 +283,7 @@ class WasenderService {
         };
     }
 
-    // Get QR code for device connection
+    // Get QR code for device connection - FIXED response handling
     async getQRCode() {
         try {
             if (!this.isConfigured()) {
@@ -273,10 +294,15 @@ class WasenderService {
             }
 
             const response = await this.axiosInstance.get(`/api/whatsapp-sessions/${this.deviceId}/qrcode`);
+            
+            // FIXED: Handle different response structures
+            const qrCode = response.data.qrCode || response.data.data?.qrCode || response.data.qr;
+            const qrImage = response.data.qrImage || response.data.data?.qrImage;
+            
             return {
                 success: true,
-                qrCode: response.data.qr,
-                qrImage: response.data.qrImage
+                qrCode: qrCode,
+                qrImage: qrImage
             };
         } catch (error) {
             console.error('❌ Error getting QR code:', error.message);
