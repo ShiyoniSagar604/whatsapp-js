@@ -4,7 +4,8 @@ require('dotenv').config();
 
 class AuthService {
     constructor() {
-        this.masterApiUrl = process.env.WASENDER_API_URL || 'https://api.wasender.com';
+        // FIXED: Add www prefix to match documentation
+        this.masterApiUrl = process.env.WASENDER_API_URL || 'https://www.wasenderapi.com';
         this.masterApiKey = process.env.WASENDER_MASTER_API_KEY; // Master API key for managing sessions
         
         // Check if we have a Master API Key configured
@@ -43,31 +44,44 @@ class AuthService {
     // Check if phone number is an existing user
     async checkExistingUser(phoneNumber) {
         try {
-            // In fallback mode, we need to distinguish between users
-            // For now, let's use a simple approach: treat the first user as existing
-            // and subsequent users as new (this is a temporary solution)
+            console.log(`🔍 Checking user: ${phoneNumber}`);
             
-            // Check if this is the first/primary user (the one whose API key we have)
-            const primaryPhoneNumber = process.env.PRIMARY_PHONE_NUMBER || '+918523862893';
+            // Get all existing sessions first
+            const allSessionsResult = await this.getAllSessions();
             
-            if (phoneNumber === primaryPhoneNumber) {
-                // This is the primary user - treat as existing
-                console.log(`🔐 Primary user detected: ${phoneNumber} - Using existing session`);
-                return {
-                    success: true,
-                    exists: true,
-                    connected: true,
-                    session: {
-                        id: 'primary_session',
-                        phone_number: phoneNumber,
-                        status: 'connected',
-                        api_key: process.env.WASENDER_API_KEY,
-                        created_at: new Date().toISOString()
-                    }
-                };
+            if (allSessionsResult.success && allSessionsResult.sessions && allSessionsResult.sessions.length > 0) {
+                // Check if any existing session matches this phone number
+                const existingUserSession = allSessionsResult.sessions.find(session => 
+                    session.phone_number === phoneNumber
+                );
+                
+                if (existingUserSession) {
+                    // This user already has a session
+                    console.log(`🔐 Found existing session for user: ${phoneNumber}`);
+                    return {
+                        success: true,
+                        exists: true,
+                        connected: existingUserSession.status === 'connected',
+                        session: existingUserSession
+                    };
+                } else {
+                    // Different user - need to rotate sessions (Basic plan workflow)
+                    console.log(`🔄 Different user detected: ${phoneNumber}`);
+                    console.log(`📱 Current sessions belong to: ${allSessionsResult.sessions.map(s => s.phone_number).join(', ')}`);
+                    console.log(`🆕 New user needs session rotation`);
+                    
+                    return {
+                        success: true,
+                        exists: false,
+                        connected: false,
+                        session: null,
+                        requiresSessionRotation: true,
+                        existingSessions: allSessionsResult.sessions
+                    };
+                }
             } else {
-                // This is a new user - should go to QR scanning
-                console.log(`🆕 New user detected: ${phoneNumber} - Redirecting to QR setup`);
+                // No existing sessions - new user can create one
+                console.log(`🆕 No existing sessions found for any user`);
                 return {
                     success: true,
                     exists: false,
@@ -88,8 +102,6 @@ class AuthService {
     // Create new WhatsApp session for phone number
     async createNewSession(phoneNumber) {
         try {
-            // In fallback mode, we can't create new WhatsApp sessions
-            // because we don't have Master API Key access
             if (!this.isConfigured()) {
                 return {
                     success: false,
@@ -97,6 +109,55 @@ class AuthService {
                 };
             }
 
+            // CRITICAL FIX: Clean up existing sessions first (Basic Plan requirement)
+            console.log('🧹 Basic Plan: Cleaning up existing sessions before creating new one...');
+            
+            // Step 1: Get all existing sessions
+            const existingSessionsResult = await this.getAllSessions();
+            if (existingSessionsResult.success && existingSessionsResult.sessions && existingSessionsResult.sessions.length > 0) {
+                console.log(`📋 Found ${existingSessionsResult.sessions.length} existing sessions to remove`);
+                
+                // Step 2: Disconnect and delete each existing session
+                for (const session of existingSessionsResult.sessions) {
+                    try {
+                        // FIXED: Only disconnect if session is connected
+                        if (session.status === 'connected') {
+                            console.log(`🔌 Disconnecting connected session: ${session.id} (${session.phone_number})`);
+                            await this.masterAxios.post(`/api/whatsapp-sessions/${session.id}/disconnect`, {});
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        } else {
+                            console.log(`⏭️ Skipping disconnect for ${session.status} session: ${session.id} (${session.phone_number})`);
+                        }
+                        
+                        // Always try to delete regardless of connection status
+                        console.log(`🗑️ Deleting session: ${session.id}`);
+                        await this.masterAxios.delete(`/api/whatsapp-sessions/${session.id}`);
+                        
+                        console.log(`✅ Cleaned up session: ${session.id}`);
+                        
+                    } catch (cleanupError) {
+                        console.error(`❌ Failed to cleanup session ${session.id}:`, cleanupError.message);
+                        
+                        // If deletion fails, try force delete (might be a different endpoint)
+                        try {
+                            console.log(`🔄 Attempting force cleanup for session: ${session.id}`);
+                            // Sometimes sessions need to be force deleted
+                            await this.masterAxios.delete(`/api/whatsapp-sessions/${session.id}?force=true`);
+                            console.log(`✅ Force cleaned up session: ${session.id}`);
+                        } catch (forceError) {
+                            console.error(`❌ Force cleanup also failed for session ${session.id}:`, forceError.message);
+                        }
+                    }
+                }
+                
+                // Step 3: Wait for cleanup to complete
+                console.log('⏳ Waiting for session cleanup to complete...');
+                await new Promise(resolve => setTimeout(resolve, 3000));
+            } else {
+                console.log('ℹ️ No existing sessions found to clean up');
+            }
+
+            // Step 4: Now create the new session
             const sessionData = {
                 name: `WhatsApp_${phoneNumber.replace('+', '')}`,
                 phone_number: phoneNumber,
@@ -107,13 +168,13 @@ class AuthService {
                 auto_reject_calls: false
             };
 
-            console.log('🔍 Creating session with data:', JSON.stringify(sessionData, null, 2));
+            console.log('📱 Creating new session after cleanup:', JSON.stringify(sessionData, null, 2));
             console.log('🔑 Using Master API Key:', this.masterApiKey ? this.masterApiKey.substring(0, 10) + '...' : 'NOT SET');
 
             const response = await this.masterAxios.post('/api/whatsapp-sessions', sessionData);
             
             if (response.data && response.data.success) {
-                console.log(`✅ Created new WhatsApp session for ${phoneNumber}`);
+                console.log(`✅ Created new WhatsApp session for ${phoneNumber} after cleanup`);
                 return {
                     success: true,
                     session: response.data.data
@@ -136,11 +197,9 @@ class AuthService {
         }
     }
 
-    // Get QR code for session
+    // Get QR code for session - CRITICAL FIX ADDED
     async getQRCode(sessionId) {
         try {
-            // In fallback mode, we can't create new WhatsApp sessions
-            // because we don't have Master API Key access
             if (!this.isConfigured()) {
                 return {
                     success: false,
@@ -148,6 +207,26 @@ class AuthService {
                 };
             }
 
+            // CRITICAL FIX: Connect session before getting QR code
+            console.log('🔗 Connecting session before QR generation:', sessionId);
+            try {
+                await this.masterAxios.post(`/api/whatsapp-sessions/${sessionId}/connect`, {});
+                console.log('✅ Session connected successfully');
+                
+                // Wait for connection to initialize
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            } catch (connectError) {
+                console.error('❌ Failed to connect session:', connectError.message);
+                if (connectError.response) {
+                    console.error('❌ Connect error details:', {
+                        status: connectError.response.status,
+                        data: connectError.response.data
+                    });
+                }
+                // Continue anyway - might already be connected
+            }
+
+            console.log('📱 Requesting QR code for session:', sessionId);
             const response = await this.masterAxios.get(`/api/whatsapp-sessions/${sessionId}/qrcode`);
             
             if (response.data && response.data.success) {
@@ -166,6 +245,13 @@ class AuthService {
             
         } catch (error) {
             console.error('❌ Error getting QR code:', error.message);
+            if (error.response) {
+                console.error('❌ QR Error details:', {
+                    status: error.response.status,
+                    statusText: error.response.statusText,
+                    data: error.response.data
+                });
+            }
             return {
                 success: false,
                 error: error.message
