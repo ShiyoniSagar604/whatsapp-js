@@ -230,8 +230,6 @@
             background-color: #5a6268;
         }
 
-
-
         .selection-info {
             background-color: #e3f2fd;
             border: 1px solid #bbdefb;
@@ -611,14 +609,21 @@
             filterGroups(); // Reset the filtered list
         }
 
+        // FIXED: Updated selectAllGroups function
         function selectAllGroups() {
-            selectedGroups = [...allGroups];
+            selectedGroups = [...allGroups]; // Create a copy of all groups
+            
+            // Mark all dropdown items as selected
             document.querySelectorAll('#dropdownList .group-item').forEach(item => {
                 item.classList.add('selected');
             });
+            
+            // Update all UI elements
             updateSelectionInfo();
             updateSelectedTags();
             updateDropdownText();
+            
+            console.log('All groups selected, count:', selectedGroups.length);
         }
 
         // Helper Functions
@@ -626,11 +631,24 @@
             return selectedGroups;
         }
 
+        // FIXED: Updated clearSelection function
         function clearSelection() {
             selectedGroups = [];
-            updateSelectionDisplay();
+            
+            // Update all UI elements for the new system
+            updateSelectionInfo();
+            updateSelectedTags();
+            updateDropdownText();
+            
+            // Remove 'selected' class from all dropdown items
+            document.querySelectorAll('#dropdownList .group-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            console.log('Selection cleared, selectedGroups length:', selectedGroups.length);
         }
 
+        // OLD FUNCTION - No longer used but keeping for compatibility
         function updateSelectionDisplay() {
             const display = document.getElementById('groupsDisplay');
             if (selectedGroups.length === 0) {
@@ -646,6 +664,7 @@
             }
         }
 
+        // OLD FUNCTION - No longer used but keeping for compatibility
         function removeGroup(groupId) {
             selectedGroups = selectedGroups.filter(g => g.id !== groupId);
             updateSelectionDisplay();
@@ -684,20 +703,31 @@
             tagsContainer.style.display = 'flex';
         }
 
+        // FIXED: Updated removeGroupTag function
         function removeGroupTag(groupId) {
+            console.log('Removing group with ID:', groupId);
+            
+            // Find and remove from selectedGroups array
             const index = selectedGroups.findIndex(g => g.id === groupId);
             if (index !== -1) {
                 selectedGroups.splice(index, 1);
+                console.log('Group removed, remaining count:', selectedGroups.length);
                 
-                // Update dropdown list selection state
-                const dropdownItem = document.querySelector(`#dropdownList .group-item[onclick*="${groupId}"]`);
-                if (dropdownItem) {
-                    dropdownItem.classList.remove('selected');
-                }
+                // Update dropdown list to remove 'selected' class
+                const dropdownItems = document.querySelectorAll('#dropdownList .group-item');
+                dropdownItems.forEach(item => {
+                    // Check if this item corresponds to the removed group by checking the group ID in innerHTML
+                    if (item.innerHTML.includes(groupId)) {
+                        item.classList.remove('selected');
+                    }
+                });
                 
+                // Update all UI elements
                 updateSelectionInfo();
                 updateSelectedTags();
                 updateDropdownText();
+            } else {
+                console.error('Group not found in selectedGroups:', groupId);
             }
         }
 
