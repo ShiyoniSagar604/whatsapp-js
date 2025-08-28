@@ -21,7 +21,6 @@ const authService = new AuthService();
 function getBaseUrl(req) {
     // 1. Check environment variable first (for production)
     if (process.env.PUBLIC_URL) {
-        console.log(`🌍 Using PUBLIC_URL from environment: ${process.env.PUBLIC_URL}`);
         return process.env.PUBLIC_URL;
     }
     
@@ -31,7 +30,6 @@ function getBaseUrl(req) {
     
     if (host && host.includes('ngrok')) {
         const ngrokUrl = `https://${host}`; // ngrok always uses https
-        console.log(`🔗 Detected ngrok URL: ${ngrokUrl}`);
         return ngrokUrl;
     }
     
@@ -39,13 +37,11 @@ function getBaseUrl(req) {
     if (req.headers['x-forwarded-host']) {
         const forwardedProtocol = req.headers['x-forwarded-proto'] || 'https';
         const forwardedUrl = `${forwardedProtocol}://${req.headers['x-forwarded-host']}`;
-        console.log(`🔗 Detected forwarded URL: ${forwardedUrl}`);
         return forwardedUrl;
     }
     
     // 4. Fallback to current request (localhost in development)
     const fallbackUrl = `${protocol}://${host}`;
-    console.log(`🔗 Using fallback URL: ${fallbackUrl}`);
     return fallbackUrl;
 }
 
@@ -108,16 +104,6 @@ app.post('/api/upload-image', upload.single('file'), async (req, res) => {
         const baseUrl = getBaseUrl(req);
         const imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
 
-        console.log(`📷 Image uploaded: ${req.file.filename}`);
-        console.log(`🔗 Base URL detected: ${baseUrl}`);
-        console.log(`🔗 Full Image URL: ${imageUrl}`);
-        
-        // Warn if still localhost
-        if (imageUrl.includes('localhost') || imageUrl.includes('127.0.0.1')) {
-            console.warn(`⚠️ WARNING: Using localhost URL. WasenderAPI will reject this.`);
-            console.warn(`💡 Access via ngrok URL to fix this issue`);
-        }
-
         res.json({
             success: true,
             message: 'Image uploaded successfully',
@@ -131,8 +117,6 @@ app.post('/api/upload-image', upload.single('file'), async (req, res) => {
         });
 
     } catch (error) {
-        console.error('❌ Image upload error:', error);
-        
         // Handle multer-specific errors
         if (error instanceof multer.MulterError) {
             if (error.code === 'LIMIT_FILE_SIZE') {
@@ -173,11 +157,6 @@ app.get('/api/debug/urls', (req, res) => {
 // Function to send direct message to selected groups (Enhanced for images)
 async function sendDirectMessage(message, selectedGroups, userApiKey = null, imageUrl = null) {
     try {
-        console.log(`📤 Sending message with image support:`);
-        console.log(`📝 Message: ${message || '[No text]'}`);
-        console.log(`🖼️ Image URL: ${imageUrl || '[No image]'}`);
-        console.log(`📋 Groups: ${selectedGroups.length}`);
-
         // Check if we have a user API key (multi-user mode)
         if (userApiKey) {
             // Use user's API key to send messages
@@ -248,7 +227,6 @@ async function sendDirectMessage(message, selectedGroups, userApiKey = null, ima
         };
         
     } catch (error) {
-        console.error('❌ Error in sendDirectMessage:', error.message);
         throw error;
     }
 }
@@ -276,7 +254,6 @@ app.get('/api/groups', async (req, res) => {
         const result = await getWhatsAppGroups(req);
         res.json(result);
     } catch (error) {
-        console.error('❌ Error in /api/groups:', error);
         res.status(500).json({
             success: false,
             error: error.message,
@@ -291,7 +268,6 @@ app.get('/api/device-status', async (req, res) => {
         const result = await getDeviceInfo();
         res.json(result);
     } catch (error) {
-        console.error('❌ Error in /api/device-status:', error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -305,7 +281,6 @@ app.get('/api/sessions', async (req, res) => {
         const result = await authService.getAllSessions();
         res.json(result);
     } catch (error) {
-        console.error('❌ Error in /api/sessions:', error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -331,7 +306,6 @@ app.post('/api/auth/check-user', async (req, res) => {
         res.json(result);
         
     } catch (error) {
-        console.error('❌ Error in /api/auth/check-user:', error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -355,7 +329,6 @@ app.post('/api/auth/create-session', async (req, res) => {
         res.json(result);
         
     } catch (error) {
-        console.error('❌ Error in /api/auth/create-session:', error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -379,7 +352,6 @@ app.get('/api/auth/qr-code/:sessionId', async (req, res) => {
         res.json(result);
         
     } catch (error) {
-        console.error('❌ Error in /api/auth/qr-code:', error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -403,7 +375,6 @@ app.get('/api/auth/check-connection/:sessionId', async (req, res) => {
         res.json(result);
         
     } catch (error) {
-        console.error('❌ Error in /api/auth/check-connection:', error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -427,7 +398,6 @@ app.post('/api/auth/logout', async (req, res) => {
         res.json(result);
         
     } catch (error) {
-        console.error('❌ Error in /api/auth/logout:', error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -455,17 +425,11 @@ app.post('/send-messages', async (req, res) => {
             });
         }
 
-        console.log('📤 Received enhanced message request:');
-        console.log(`📝 Message: ${message || '[No text]'}`);
-        console.log(`🖼️ Image: ${hasImage ? 'Yes' : 'No'}`);
-        console.log(`📋 Selected groups: ${selectedGroups.length}`);
-        
         // Check if request has authorization header (multi-user mode)
         let userApiKey = null;
         const authHeader = req.headers.authorization;
         if (authHeader && authHeader.startsWith('Bearer ')) {
             userApiKey = authHeader.substring(7);
-            console.log('🔐 Using user API key for message sending');
         }
         
         const result = await sendDirectMessage(
@@ -511,7 +475,6 @@ ${result.failedCount > 0 ? `❌ Failed: ${result.failedCount} ${contentType}` : 
         });
         
     } catch (err) {
-        console.error('❌ Server error:', err);
         res.status(500).json({ 
             success: false, 
             message: `Error: ${err.message}` 
@@ -525,7 +488,6 @@ app.post('/api/logout', async (req, res) => {
         const result = await wasenderService.logoutDevice();
         res.json(result);
     } catch (error) {
-        console.error('❌ Error in /api/logout:', error);
         res.status(500).json({
             success: false,
             error: error.message
@@ -536,11 +498,9 @@ app.post('/api/logout', async (req, res) => {
 // Webhook endpoint for message status updates (optional)
 app.post('/webhook', (req, res) => {
     try {
-        console.log('📥 Webhook received:', req.body);
         // Handle webhook data here if needed
         res.status(200).json({ success: true });
     } catch (error) {
-        console.error('❌ Webhook error:', error);
         res.status(500).json({ success: false });
     }
 });
@@ -570,8 +530,6 @@ app.post('/api/generate-qr', async (req, res) => {
             });
         }
         
-        console.log('📱 Generating QR code for phone:', phone);
-        
         const qrService = new QRGenerationService();
         const result = await qrService.generateQRForNewUser(phone);
         
@@ -595,7 +553,6 @@ app.post('/api/generate-qr', async (req, res) => {
         }
         
     } catch (error) {
-        console.error('❌ QR generation error:', error);
         res.status(500).json({ 
             success: false, 
             message: error.message || 'Failed to generate QR code' 
@@ -622,7 +579,6 @@ app.post('/api/check-connection', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Connection check error:', error);
         res.status(500).json({ 
             success: false, 
             message: error.message || 'Failed to check connection' 
@@ -649,7 +605,6 @@ app.get('/api/session-details/:sessionId', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Session details error:', error);
         res.status(500).json({ 
             success: false, 
             message: error.message || 'Failed to get session details' 
@@ -677,7 +632,6 @@ app.delete('/api/session/:sessionId', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Session deletion error:', error);
         res.status(500).json({ 
             success: false, 
             message: error.message || 'Failed to delete session' 
@@ -687,8 +641,6 @@ app.delete('/api/session/:sessionId', async (req, res) => {
 
 app.post('/api/logout-all-sessions', async (req, res) => {
     try {
-        console.log('🚪 User requested logout - deleting all sessions');
-        
         const qrService = new QRGenerationService();
         const result = await qrService.deleteAllSessions();
         
@@ -699,7 +651,6 @@ app.post('/api/logout-all-sessions', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Logout error:', error);
         res.status(500).json({ 
             success: false, 
             message: error.message || 'Failed to logout' 
@@ -754,8 +705,6 @@ app.post('/api/schedule', async (req, res) => {
         const contentType = hasImage ? 
             (message ? 'message with image' : 'image') : 'message';
         
-        console.log(`📅 Scheduling ${contentType} for:`, runAt.toISOString(), 'to', groupIds.length, 'groups');
-        
         // Get user session from headers
         const userApiKey = req.headers.authorization?.replace('Bearer ', '');
         const userPhone = req.headers['x-user-phone'];
@@ -796,7 +745,6 @@ app.post('/api/schedule', async (req, res) => {
         });
         
     } catch (error) {
-        console.error('❌ Schedule error:', error);
         res.status(500).json({ 
             success: false, 
             message: error.message || 'Failed to schedule message' 
@@ -813,7 +761,6 @@ app.get('/api/schedule', async (req, res) => {
             data: jobs
         });
     } catch (error) {
-        console.error('❌ Get schedule error:', error);
         res.status(500).json({ 
             success: false, 
             message: error.message || 'Failed to get scheduled jobs' 
@@ -849,7 +796,6 @@ app.delete('/api/schedule/:jobId', async (req, res) => {
         }
         
     } catch (error) {
-        console.error('❌ Cancel schedule error:', error);
         res.status(500).json({ 
             success: false, 
             message: error.message || 'Failed to cancel job' 
@@ -885,7 +831,6 @@ app.get('/api/schedule/:jobId', async (req, res) => {
         }
         
     } catch (error) {
-        console.error('❌ Get job details error:', error);
         res.status(500).json({ 
             success: false, 
             message: error.message || 'Failed to get job details' 
@@ -914,7 +859,6 @@ app.use((error, req, res, next) => {
 
 // Global error handler
 app.use((error, req, res, next) => {
-    console.error('❌ Unhandled error:', error);
     res.status(500).json({
         success: false,
         error: 'Internal server error'
@@ -923,33 +867,9 @@ app.use((error, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log('🚀 Enhanced WhatsApp Bot Server with Image Support');
-    console.log(`📡 Server running on http://localhost:${PORT}`);
-    
     // Check and create uploads directory
     const uploadDir = './uploads';
     if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
-        console.log('📁 Created uploads directory');
     }
-    
-    // Log configuration status
-    console.log('\n📋 Configuration Status:');
-    console.log(`🔑 Master API Key: ${process.env.WASENDER_MASTER_API_KEY ? 'SET' : 'NOT SET'}`);
-    console.log(`🌍 API URL: ${process.env.WASENDER_API_URL}`);
-    console.log(`📁 Uploads Directory: ${fs.existsSync(uploadDir) ? 'Ready' : 'Missing'}`);
-    console.log(`🔗 PUBLIC_URL: ${process.env.PUBLIC_URL || 'Auto-detect mode'}`);
-    
-    if (process.env.WASENDER_API_KEY && process.env.WASENDER_DEVICE_ID) {
-        console.log('✅ Single-user WasenderApi configured - Ready for production messaging with images!');
-        console.log('📱 Check device status: http://localhost:' + PORT + '/api/device-status');
-    } else {
-        console.log('⚠️ Single-user WasenderApi not configured - Multi-user mode enabled');
-    }
-    
-    console.log('\n🔗 Important URLs:');
-    console.log('📷 Image upload endpoint: http://localhost:' + PORT + '/api/upload-image');
-    console.log('🔍 URL debug endpoint: http://localhost:' + PORT + '/api/debug/urls');
-    console.log('📊 Health check: http://localhost:' + PORT + '/health');
-    console.log('\n🌍 For ngrok access, use: https://your-ngrok-url.ngrok-free.app');
 });
