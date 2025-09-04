@@ -348,7 +348,7 @@ class WasenderService {
     }
 
     // Enhanced: Send messages to multiple groups with delay and image support
-    async sendMessagesToGroups(groups, message, delayMs = 60000, imageUrl = null) {
+    async sendMessagesToGroups(groups, message, delayMs = 20000, imageUrl = null) {
         const results = [];
         let successCount = 0;
         
@@ -424,7 +424,7 @@ class WasenderService {
     }
 
     // NEW: Send images to multiple groups with delay
-    async sendImagesToGroups(groups, caption, imageUrl, delayMs = 60000) {
+    async sendImagesToGroups(groups, caption, imageUrl, delayMs = 20000) {
         const results = [];
         let successCount = 0;
         

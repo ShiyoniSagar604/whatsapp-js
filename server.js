@@ -152,6 +152,15 @@ app.get('/api/debug/urls', (req, res) => {
     });
 });
 
+// ===== RANDOM DELAY FUNCTION =====
+
+// Function to generate random delay between 10-30 seconds
+function getRandomDelay() {
+    const minDelay = 10000; // 10 seconds
+    const maxDelay = 30000; // 30 seconds
+    return Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+}
+
 // ===== ENHANCED SEND MESSAGE FUNCTION =====
 
 // Function to send direct message to selected groups (Enhanced for images)
@@ -170,7 +179,7 @@ async function sendDirectMessage(message, selectedGroups, userApiKey = null, ima
             const sendResults = await userWasenderService.sendMessagesToGroups(
                 selectedGroups, 
                 message, 
-                60000, // 1 minute delay
+                getRandomDelay(), // Variable delay between 10-30 seconds
                 imageUrl
             );
             
@@ -212,7 +221,7 @@ async function sendDirectMessage(message, selectedGroups, userApiKey = null, ima
         const sendResults = await wasenderService.sendMessagesToGroups(
             selectedGroups, 
             message, 
-            60000, // 1 minute delay
+            getRandomDelay(), // Variable delay between 10-30 seconds
             imageUrl
         );
         

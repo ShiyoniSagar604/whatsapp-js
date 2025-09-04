@@ -70,8 +70,10 @@ const scheduleBroadcast = (params) => {
                     
                     // Add delay between messages to avoid rate limiting
                     if (i < groupIds.length - 1) {
-                        console.log(`[scheduler] Waiting 60 seconds before next message...`);
-                        await new Promise(resolve => setTimeout(resolve, 60000)); // 60 seconds
+                        // Random delay between 10-30 seconds
+                        const randomDelay = Math.floor(Math.random() * (30000 - 10000 + 1)) + 10000;
+                        console.log(`[scheduler] Waiting ${Math.round(randomDelay/1000)} seconds before next message...`);
+                        await new Promise(resolve => setTimeout(resolve, randomDelay));
                     }
                     
                 } catch (err) {
