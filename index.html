@@ -686,6 +686,248 @@
         #imageInput {
             display: none;
         }
+
+        /* Shortcuts Styles */
+        .shortcuts-section {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .shortcuts-section h4 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .shortcuts-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .shortcuts-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .shortcut-item {
+            background: linear-gradient(135deg, #25D366, #1ebe5b);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(37, 211, 102, 0.2);
+        }
+
+        .shortcut-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(37, 211, 102, 0.3);
+        }
+
+        .shortcut-item.active {
+            background: linear-gradient(135deg, #1ebe5b, #25D366);
+            box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.3);
+        }
+
+        .shortcut-name {
+            flex: 1;
+        }
+
+        .shortcut-count {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .shortcut-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .shortcut-action-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            transition: background-color 0.2s ease;
+        }
+
+        .shortcut-action-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .shortcut-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin: 0;
+        }
+
+        .shortcut-btn:hover {
+            background-color: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-title {
+            margin: 0;
+            color: #333;
+            font-size: 20px;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .modal-btn-primary {
+            background-color: #25D366;
+            color: white;
+        }
+
+        .modal-btn-primary:hover {
+            background-color: #1ebe5b;
+        }
+
+        .modal-btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .modal-btn-secondary:hover {
+            background-color: #5a6268;
+        }
+
+        .group-checkbox {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 4px 0;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .group-checkbox:hover {
+            background-color: #e9ecef;
+        }
+
+        .group-checkbox input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .group-checkbox.selected {
+            background-color: #d4edda;
+            border-color: #25D366;
+        }
+
+        .shortcut-groups-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            background: white;
+        }
     </style>
 </head>
 <body>
@@ -700,6 +942,19 @@
         <div class="section">
             <h3><span class="step-number">1</span>Select Your WhatsApp Groups</h3>
             <p>Choose which groups to send messages to this week:</p>
+            
+            <!-- Shortcuts Section -->
+            <div class="shortcuts-section" style="margin-bottom: 20px;">
+                <h4>⚡ Quick Shortcuts</h4>
+                <div class="shortcuts-container">
+                    <div id="shortcutsList" class="shortcuts-list">
+                        <!-- Shortcuts will be loaded here -->
+                    </div>
+                    <button id="createShortcutBtn" class="shortcut-btn" onclick="showCreateShortcutModal()">
+                        ➕ Create Shortcut
+                    </button>
+                </div>
+            </div>
             
             <button id="selectAllBtn" onclick="selectAllGroups()" style="display: none;">✅ Select All</button>
             <button id="clearSelectionBtn" class="clear-btn" onclick="clearSelection()" style="display: none;">❌ Clear Selection</button>
@@ -850,11 +1105,39 @@
         </div>
     </div>
 
+    <!-- Create/Edit Shortcut Modal -->
+    <div id="shortcutModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Create New Shortcut</h3>
+                <button class="close-btn" onclick="closeShortcutModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="shortcutName">Shortcut Name:</label>
+                    <input type="text" id="shortcutName" placeholder="e.g., Family Groups, Work Teams, etc." maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label>Select Groups for this Shortcut:</label>
+                    <div id="shortcutGroupsList" class="shortcut-groups-list">
+                        <!-- Groups will be loaded here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-secondary" onclick="closeShortcutModal()">Cancel</button>
+                <button class="modal-btn modal-btn-primary" id="saveShortcutBtn" onclick="saveShortcut()">Save Shortcut</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let allGroups = [];
         let selectedGroups = [];
         let uploadedImage = null;
         let currentSendMode = 'now';
+        let shortcuts = [];
+        let editingShortcutId = null;
 
         // Auto-load groups on page load
         window.addEventListener('load', async () => {
@@ -865,6 +1148,7 @@
             }
 
             await loadAllGroups();
+            await loadShortcuts();
             
             setTimeout(() => {
                 const groupsStatus = document.getElementById('groupsStatus');
@@ -1587,6 +1871,267 @@
             } catch (error) {
                 console.error('Error cancelling job:', error);
                 alert('❌ Error cancelling job: ' + error.message);
+            }
+        }
+
+        // Shortcuts functionality
+        async function loadShortcuts() {
+            try {
+                const userSession = JSON.parse(sessionStorage.getItem('currentUserSession'));
+                if (!userSession || !userSession.apiKey) {
+                    return;
+                }
+
+                const response = await fetch('/api/shortcuts', {
+                    headers: {
+                        'Authorization': `Bearer ${userSession.apiKey}`,
+                        'Content-Type': 'application/json',
+                        'X-User-Phone': userSession.phoneNumber
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Error loading shortcuts:', response.status, errorText);
+                    return;
+                }
+                
+                const result = await response.json();
+                
+                if (result.success && result.shortcuts) {
+                    shortcuts = result.shortcuts;
+                    displayShortcuts();
+                }
+                
+            } catch (error) {
+                console.error('Error loading shortcuts:', error);
+            }
+        }
+
+        function displayShortcuts() {
+            const shortcutsList = document.getElementById('shortcutsList');
+            shortcutsList.innerHTML = '';
+
+            shortcuts.forEach(shortcut => {
+                const shortcutElement = document.createElement('div');
+                shortcutElement.className = 'shortcut-item';
+                shortcutElement.innerHTML = `
+                    <span class="shortcut-name">${shortcut.name}</span>
+                    <span class="shortcut-count">${shortcut.groupIds.length}</span>
+                    <div class="shortcut-actions">
+                        <button class="shortcut-action-btn" onclick="editShortcut('${shortcut.id}')" title="Edit">✏️</button>
+                        <button class="shortcut-action-btn" onclick="deleteShortcut('${shortcut.id}')" title="Delete">🗑️</button>
+                    </div>
+                `;
+                shortcutElement.onclick = () => applyShortcut(shortcut.id);
+                shortcutsList.appendChild(shortcutElement);
+            });
+        }
+
+        function applyShortcut(shortcutId) {
+            const shortcut = shortcuts.find(s => s.id === shortcutId);
+            if (!shortcut) return;
+
+            // Clear current selection
+            selectedGroups = [];
+            document.querySelectorAll('#dropdownList .group-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+
+            // Apply shortcut groups
+            shortcut.groupIds.forEach(groupId => {
+                const group = allGroups.find(g => g.id === groupId);
+                if (group) {
+                    selectedGroups.push(group);
+                    // Update visual selection
+                    const dropdownItems = document.querySelectorAll('#dropdownList .group-item');
+                    dropdownItems.forEach(item => {
+                        if (item.innerHTML.includes(groupId)) {
+                            item.classList.add('selected');
+                        }
+                    });
+                }
+            });
+
+            updateSelectionInfo();
+            updateSelectedTags();
+            updateDropdownText();
+
+            // Visual feedback
+            const shortcutElement = document.querySelector(`[onclick="applyShortcut('${shortcutId}')"]`);
+            if (shortcutElement) {
+                shortcutElement.classList.add('active');
+                setTimeout(() => {
+                    shortcutElement.classList.remove('active');
+                }, 1000);
+            }
+        }
+
+        function showCreateShortcutModal() {
+            editingShortcutId = null;
+            document.getElementById('modalTitle').textContent = 'Create New Shortcut';
+            document.getElementById('shortcutName').value = '';
+            document.getElementById('shortcutName').placeholder = 'e.g., Family Groups, Work Teams, etc.';
+            document.getElementById('saveShortcutBtn').textContent = 'Save Shortcut';
+            
+            loadGroupsForShortcut();
+            document.getElementById('shortcutModal').style.display = 'block';
+        }
+
+        function editShortcut(shortcutId) {
+            const shortcut = shortcuts.find(s => s.id === shortcutId);
+            if (!shortcut) return;
+
+            editingShortcutId = shortcutId;
+            document.getElementById('modalTitle').textContent = 'Edit Shortcut';
+            document.getElementById('shortcutName').value = shortcut.name;
+            document.getElementById('saveShortcutBtn').textContent = 'Update Shortcut';
+            
+            loadGroupsForShortcut(shortcut.groupIds);
+            document.getElementById('shortcutModal').style.display = 'block';
+        }
+
+        function loadGroupsForShortcut(selectedGroupIds = []) {
+            const groupsList = document.getElementById('shortcutGroupsList');
+            groupsList.innerHTML = '';
+
+            allGroups.forEach(group => {
+                const isSelected = selectedGroupIds.includes(group.id);
+                const groupDiv = document.createElement('div');
+                groupDiv.className = `group-checkbox ${isSelected ? 'selected' : ''}`;
+                groupDiv.innerHTML = `
+                    <input type="checkbox" id="group_${group.id}" value="${group.id}" ${isSelected ? 'checked' : ''}>
+                    <label for="group_${group.id}">${group.name}</label>
+                `;
+                groupDiv.onclick = () => toggleGroupCheckbox(groupDiv, group.id);
+                groupsList.appendChild(groupDiv);
+            });
+        }
+
+        function toggleGroupCheckbox(element, groupId) {
+            const checkbox = element.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            element.classList.toggle('selected', checkbox.checked);
+        }
+
+        async function saveShortcut() {
+            const name = document.getElementById('shortcutName').value.trim();
+            if (!name) {
+                alert('Please enter a shortcut name');
+                return;
+            }
+
+            const selectedCheckboxes = document.querySelectorAll('#shortcutGroupsList input[type="checkbox"]:checked');
+            const groupIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+            if (groupIds.length === 0) {
+                alert('Please select at least one group for the shortcut');
+                return;
+            }
+
+            try {
+                const userSession = JSON.parse(sessionStorage.getItem('currentUserSession'));
+                if (!userSession || !userSession.apiKey) {
+                    throw new Error('User session not found. Please login again.');
+                }
+
+                const requestBody = {
+                    name: name,
+                    groupIds: groupIds
+                };
+
+                let response;
+                if (editingShortcutId) {
+                    // Update existing shortcut
+                    response = await fetch(`/api/shortcuts/${editingShortcutId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${userSession.apiKey}`,
+                            'Content-Type': 'application/json',
+                            'X-User-Phone': userSession.phoneNumber
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+                } else {
+                    // Create new shortcut
+                    response = await fetch('/api/shortcuts', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${userSession.apiKey}`,
+                            'Content-Type': 'application/json',
+                            'X-User-Phone': userSession.phoneNumber
+                        },
+                        body: JSON.stringify(requestBody)
+                    });
+                }
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Server error response:', errorText);
+                    throw new Error(`Server error: ${response.status} - ${errorText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    closeShortcutModal();
+                    await loadShortcuts();
+                    alert(editingShortcutId ? 'Shortcut updated successfully!' : 'Shortcut created successfully!');
+                } else {
+                    throw new Error(result.message || 'Failed to save shortcut');
+                }
+
+            } catch (error) {
+                console.error('Error saving shortcut:', error);
+                alert('Error saving shortcut: ' + error.message);
+            }
+        }
+
+        async function deleteShortcut(shortcutId) {
+            if (!confirm('Are you sure you want to delete this shortcut?')) {
+                return;
+            }
+
+            try {
+                const userSession = JSON.parse(sessionStorage.getItem('currentUserSession'));
+                if (!userSession || !userSession.apiKey) {
+                    throw new Error('User session not found. Please login again.');
+                }
+
+                const response = await fetch(`/api/shortcuts/${shortcutId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${userSession.apiKey}`,
+                        'Content-Type': 'application/json',
+                        'X-User-Phone': userSession.phoneNumber
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await loadShortcuts();
+                    alert('Shortcut deleted successfully!');
+                } else {
+                    throw new Error(result.message || 'Failed to delete shortcut');
+                }
+
+            } catch (error) {
+                console.error('Error deleting shortcut:', error);
+                alert('Error deleting shortcut: ' + error.message);
+            }
+        }
+
+        function closeShortcutModal() {
+            document.getElementById('shortcutModal').style.display = 'none';
+            editingShortcutId = null;
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('shortcutModal');
+            if (event.target === modal) {
+                closeShortcutModal();
             }
         }
 

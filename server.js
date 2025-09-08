@@ -847,6 +847,269 @@ app.get('/api/schedule/:jobId', async (req, res) => {
     }
 });
 
+// ===== SHORTCUTS API ENDPOINTS =====
+
+// Get all shortcuts for a user
+app.get('/api/shortcuts', async (req, res) => {
+    try {
+        const userApiKey = req.headers.authorization?.replace('Bearer ', '');
+        const userPhone = req.headers['x-user-phone'];
+        
+        console.log('Loading shortcuts for user:', { userPhone, hasApiKey: !!userApiKey });
+        
+        if (!userApiKey || !userPhone) {
+            console.log('Missing authentication for shortcuts load');
+            return res.status(401).json({
+                success: false,
+                message: 'User authentication required'
+            });
+        }
+
+        // For now, we'll use a simple file-based storage
+        // In production, you'd want to use a proper database
+        const shortcutsFile = `./data/shortcuts_${userPhone}.json`;
+        console.log('Shortcuts file path:', shortcutsFile);
+        
+        let shortcuts = [];
+        if (fs.existsSync(shortcutsFile)) {
+            try {
+                const data = fs.readFileSync(shortcutsFile, 'utf8');
+                shortcuts = JSON.parse(data);
+                console.log('Loaded shortcuts:', shortcuts.length);
+            } catch (parseError) {
+                console.error('Error parsing shortcuts file:', parseError);
+                shortcuts = [];
+            }
+        } else {
+            console.log('Shortcuts file does not exist, returning empty array');
+        }
+
+        res.json({
+            success: true,
+            shortcuts: shortcuts
+        });
+
+    } catch (error) {
+        console.error('Error in load shortcuts endpoint:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to load shortcuts'
+        });
+    }
+});
+
+// Create a new shortcut
+app.post('/api/shortcuts', async (req, res) => {
+    try {
+        const { name, groupIds } = req.body;
+        const userApiKey = req.headers.authorization?.replace('Bearer ', '');
+        const userPhone = req.headers['x-user-phone'];
+        
+        console.log('Creating shortcut:', { name, groupIds, userPhone, hasApiKey: !!userApiKey });
+        
+        if (!userApiKey || !userPhone) {
+            console.log('Missing authentication:', { userApiKey: !!userApiKey, userPhone: !!userPhone });
+            return res.status(401).json({
+                success: false,
+                message: 'User authentication required'
+            });
+        }
+
+        if (!name || !groupIds || !Array.isArray(groupIds) || groupIds.length === 0) {
+            console.log('Invalid request data:', { name, groupIds });
+            return res.status(400).json({
+                success: false,
+                message: 'Name and groupIds array are required'
+            });
+        }
+
+        // Ensure data directory exists
+        const dataDir = './data';
+        if (!fs.existsSync(dataDir)) {
+            console.log('Creating data directory:', dataDir);
+            fs.mkdirSync(dataDir, { recursive: true });
+        }
+
+        const shortcutsFile = `./data/shortcuts_${userPhone}.json`;
+        console.log('Shortcuts file path:', shortcutsFile);
+        
+        let shortcuts = [];
+        if (fs.existsSync(shortcutsFile)) {
+            try {
+                const data = fs.readFileSync(shortcutsFile, 'utf8');
+                shortcuts = JSON.parse(data);
+                console.log('Loaded existing shortcuts:', shortcuts.length);
+            } catch (parseError) {
+                console.error('Error parsing shortcuts file:', parseError);
+                shortcuts = [];
+            }
+        }
+
+        // Check if shortcut name already exists
+        if (shortcuts.some(s => s.name.toLowerCase() === name.toLowerCase())) {
+            console.log('Shortcut name already exists:', name);
+            return res.status(400).json({
+                success: false,
+                message: 'A shortcut with this name already exists'
+            });
+        }
+
+        const newShortcut = {
+            id: Date.now().toString(),
+            name: name.trim(),
+            groupIds: groupIds,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        shortcuts.push(newShortcut);
+        
+        try {
+            fs.writeFileSync(shortcutsFile, JSON.stringify(shortcuts, null, 2));
+            console.log('Shortcut saved successfully:', newShortcut);
+        } catch (writeError) {
+            console.error('Error writing shortcuts file:', writeError);
+            throw writeError;
+        }
+
+        res.json({
+            success: true,
+            message: 'Shortcut created successfully',
+            shortcut: newShortcut
+        });
+
+    } catch (error) {
+        console.error('Error in create shortcut endpoint:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to create shortcut'
+        });
+    }
+});
+
+// Update an existing shortcut
+app.put('/api/shortcuts/:shortcutId', async (req, res) => {
+    try {
+        const { shortcutId } = req.params;
+        const { name, groupIds } = req.body;
+        const userApiKey = req.headers.authorization?.replace('Bearer ', '');
+        const userPhone = req.headers['x-user-phone'];
+        
+        if (!userApiKey || !userPhone) {
+            return res.status(401).json({
+                success: false,
+                message: 'User authentication required'
+            });
+        }
+
+        if (!name || !groupIds || !Array.isArray(groupIds) || groupIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Name and groupIds array are required'
+            });
+        }
+
+        const shortcutsFile = `./data/shortcuts_${userPhone}.json`;
+        
+        if (!fs.existsSync(shortcutsFile)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Shortcut not found'
+            });
+        }
+
+        const data = fs.readFileSync(shortcutsFile, 'utf8');
+        const shortcuts = JSON.parse(data);
+
+        const shortcutIndex = shortcuts.findIndex(s => s.id === shortcutId);
+        if (shortcutIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: 'Shortcut not found'
+            });
+        }
+
+        // Check if shortcut name already exists (excluding current shortcut)
+        if (shortcuts.some(s => s.id !== shortcutId && s.name.toLowerCase() === name.toLowerCase())) {
+            return res.status(400).json({
+                success: false,
+                message: 'A shortcut with this name already exists'
+            });
+        }
+
+        shortcuts[shortcutIndex] = {
+            ...shortcuts[shortcutIndex],
+            name: name.trim(),
+            groupIds: groupIds,
+            updatedAt: new Date().toISOString()
+        };
+
+        fs.writeFileSync(shortcutsFile, JSON.stringify(shortcuts, null, 2));
+
+        res.json({
+            success: true,
+            message: 'Shortcut updated successfully',
+            shortcut: shortcuts[shortcutIndex]
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to update shortcut'
+        });
+    }
+});
+
+// Delete a shortcut
+app.delete('/api/shortcuts/:shortcutId', async (req, res) => {
+    try {
+        const { shortcutId } = req.params;
+        const userApiKey = req.headers.authorization?.replace('Bearer ', '');
+        const userPhone = req.headers['x-user-phone'];
+        
+        if (!userApiKey || !userPhone) {
+            return res.status(401).json({
+                success: false,
+                message: 'User authentication required'
+            });
+        }
+
+        const shortcutsFile = `./data/shortcuts_${userPhone}.json`;
+        
+        if (!fs.existsSync(shortcutsFile)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Shortcut not found'
+            });
+        }
+
+        const data = fs.readFileSync(shortcutsFile, 'utf8');
+        const shortcuts = JSON.parse(data);
+
+        const shortcutIndex = shortcuts.findIndex(s => s.id === shortcutId);
+        if (shortcutIndex === -1) {
+            return res.status(404).json({
+                success: false,
+                message: 'Shortcut not found'
+            });
+        }
+
+        shortcuts.splice(shortcutIndex, 1);
+        fs.writeFileSync(shortcutsFile, JSON.stringify(shortcuts, null, 2));
+
+        res.json({
+            success: true,
+            message: 'Shortcut deleted successfully'
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to delete shortcut'
+        });
+    }
+});
+
 // ===== ERROR HANDLING MIDDLEWARE =====
 
 // Handle multer errors
@@ -868,9 +1131,11 @@ app.use((error, req, res, next) => {
 
 // Global error handler
 app.use((error, req, res, next) => {
+    console.error('Global error handler caught:', error);
     res.status(500).json({
         success: false,
-        error: 'Internal server error'
+        error: 'Internal server error',
+        message: error.message || 'An unexpected error occurred'
     });
 });
 
